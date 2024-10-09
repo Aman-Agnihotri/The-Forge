@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import cors from "cors";
 
+import authRoutes from "./routes/authRoutes";
+
 dotenv.config();
 
 const app = express();
@@ -10,6 +12,8 @@ app.use(express.json());
 
 app.use(helmet());
 app.use(cors());
+
+app.use("/auth", authRoutes);
 
 app.get("/", (req, res) => {
     res.send("The Forge API is running.")
