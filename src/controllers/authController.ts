@@ -3,19 +3,29 @@ import { generateToken } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
 import { prisma } from "../config/prisma";
 
-
+/**
+ * Registers a new user and generates a JWT for them.
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ *
+ * @returns {Promise<any>} A promise that resolves with the JWT and the user object.
+ *
+ * @throws {HttpError} If the user already exists, or if an error occurs while registering the user.
+ */
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { username, email, password } = req.body;
 
     try{
         //Check if the user already exists
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.users.findUnique({ where: { email } });
         if(user){
             return res.status(409).json({ message: "User already exists with provided email address." });
         }
 
         //Create a new user and hash the password using argon2
-        const newUser = await prisma.user.create({
+        const newUser = await prisma.users.create({
             data: {
                 username,
                 email,
@@ -33,12 +43,23 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         })
 }};
 
+/**
+ * Logs in an existing user and generates a JWT for them.
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ *
+ * @returns {Promise<any>} A promise that resolves with the JWT and the user object.
+ *
+ * @throws {HttpError} If the user does not exist, or if an error occurs while logging in.
+ */
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { email, password } = req.body;
 
     try{
         //Check if the user exists
-        const user = await prisma.user.findUnique({ where : { email } });
+        const user = await prisma.users.findUnique({ where : { email } });
 
         if(!user){
             return res.status(401).json({ message: "User not found with provided email address." });

@@ -1,4 +1,7 @@
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const jwt_secret = process.env.JWT_SECRET;
 const jwt_expiration = process.env.JWT_EXPIRATION;
@@ -13,7 +16,7 @@ if (!jwt_secret || !jwt_expiration) {
  * @param {string} userId - the user id for which to generate a token
  * @returns {string} a JSON Web Token that can be used to authenticate the user
  */
-export const generateToken = (userId: string) => {
+export const generateToken = (userId: number) => {
     return jwt.sign({id: userId }, jwt_secret, {algorithm: "HS512" , expiresIn: jwt_expiration });
 }
 /**

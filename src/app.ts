@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
     res.send("The Forge API is running.")
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT ?? 3000;
 
 app.listen(port, () => {
     console.log(`The Forge API is running on port ${port}.`);
