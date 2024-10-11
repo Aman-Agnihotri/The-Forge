@@ -16,7 +16,7 @@ app.use(cors());
 app.use("/auth", authRoutes);
 
 app.get("/", (req, res) => {
-    res.send("The Forge API is running.")
+    res.send("The Forge API is running. <a href='/auth/linkedin'>Login with Linkedin</a>");
 });
 
 const port = process.env.PORT ?? 3000;

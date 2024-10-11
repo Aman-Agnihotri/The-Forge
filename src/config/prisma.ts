@@ -7,7 +7,7 @@ dotenv.config();
 
 const provider = process.env.DATABASE_PROVIDER ?? "postgresql";
 
-const existingSchema = fs.readFileSync('prisma/schema.prisma', 'utf8')
+const existingSchema = fs.readFileSync('prisma/schema.prisma', 'utf8');
 
 const datasourceProviderRegex = /datasource\s+db\s*{[^}]*provider\s*=\s*"[^"]*"[^}]*}/;
 
