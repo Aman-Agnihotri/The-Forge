@@ -16,19 +16,36 @@ router.post("/register", registerUser);
 
 //Google OAuth routes
 router.get('/google', 
-    passport.authenticate('google', { 
+    passport.authenticate('google', {
         scope: ['email', 'profile'] 
     }));
 router.get('/google/callback', 
-    passport.authenticate('google', { session: false }), (req, res) => {
-    // Generate token and send response
-    if (req.user && 'id' in req.user) {
-        const token = generateToken(req.user.id as number);
-        res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
-    } else {
-        res.status(400).send('User information is missing');
-    }
-});
+    passport.authenticate('google', { session: false }), (req: any, res: any) => {
+    
+        if(req.user && 'id' in req.user){
+            const token = generateToken(req.user.id as string);
+            res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
+        } else {
+                res.status(400).send('User information is missing');
+        }
+    },
+        (err: any, req: any, res: any, next: any) => {
+            //Handle callback errors
+            if(err){
+                try {
+                    const error = JSON.parse(err);
+                    console.log("Error message: ", error["message"]);
+                    console.log("Error status: ", error["status"]);
+                    res.status(error.status).send(error.message);
+                } catch (e) {
+                    console.log("Error in parsing error message: ", e);
+                    res.status(500).send("Internal Server Error");
+                }
+            } else {
+                res.Status(500).send("Internal Server Error");
+            }
+        }
+    );
 
 //Github OAuth routes
 router.get('/github', 
@@ -36,15 +53,34 @@ router.get('/github',
         scope: ['user:email'] 
     }));
 router.get('/github/callback', 
-    passport.authenticate('github', { session: false }), (req, res) => {
-        // Generate token and send response
-        if (req.user && 'id' in req.user) {
-            const token = generateToken(req.user.id as number);
-            res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
-        } else {
-            res.status(400).send('User information is missing');
+    passport.authenticate('github', { session: false }), (req: any, res: any) => {
+
+        if(req.user){
+            if('id' in req.user){
+                const token = generateToken(req.user.id as string);
+                res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
+            } else {
+                res.status(400).send('User information is missing');
+            }
         }
-    });
+    },
+        (err: any, req: any, res: any, next: any) => {
+            //Handle callback errors
+            if(err){
+                try {
+                    const error = JSON.parse(err);
+                    console.log("Error message: ", error["message"]);
+                    console.log("Error status: ", error["status"]);
+                    res.status(error.status).send(error.message);
+                } catch (e) {
+                    console.log("Error in parsing error message: ", e);
+                    res.status(500).send("Internal Server Error");
+                }
+            } else {
+                res.Status(500).send("Internal Server Error");
+            }
+        }
+    );
 
 //Facebook OAuth routes
 router.get('/facebook', 
@@ -52,15 +88,34 @@ router.get('/facebook',
         scope: ['email'] 
     }));
 router.get('/facebook/callback',
-    passport.authenticate('facebook', { session: false }), (req, res) => {
-        // Generate token and send response
-        if (req.user && 'id' in req.user) {
-            const token = generateToken(req.user.id as number);
-            res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
-        } else {
-            res.status(400).send('User information is missing');
+    passport.authenticate('facebook', { session: false }), (req: any, res: any) => {
+
+        if(req.user){
+            if('id' in req.user){
+                const token = generateToken(req.user.id as string);
+                res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
+            } else {
+                res.status(400).send('User information is missing');
+            }
         }
-    });
+    },
+        (err: any, req: any, res: any, next: any) => {
+            //Handle callback errors
+            if(err){
+                try {
+                    const error = JSON.parse(err);
+                    console.log("Error message: ", error["message"]);
+                    console.log("Error status: ", error["status"]);
+                    res.status(error.status).send(error.message);
+                } catch (e) {
+                    console.log("Error in parsing error message: ", e);
+                    res.status(500).send("Internal Server Error");
+                }
+            } else {
+                res.Status(500).send("Internal Server Error");
+            }
+        }
+    );
 
 //LinkedIn OAuth routes
 router.get('/linkedin', 
@@ -68,14 +123,32 @@ router.get('/linkedin',
         scope: ['r_emailaddress', 'r_liteprofile'] 
     }));
 router.get('/linkedin/callback',
-    passport.authenticate('linkedin', { session: false }), (req, res) => {
-        // Generate token and send response
-        if (req.user && 'id' in req.user) {
-            const token = generateToken(req.user.id as number);
-            res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
-        } else {
-            res.status(400).send('User information is missing');
+    passport.authenticate('linkedin', { session: false }), (req: any, res: any) => {
+        if(req.user){
+            if('id' in req.user){
+                const token = generateToken(req.user.id as string);
+                res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify(req.user)}`); // Redirect with token and user id
+            } else {
+                res.status(400).send('User information is missing');
+            }
         }
-    });
+    },
+        (err: any, req: any, res: any, next: any) => {
+            //Handle callback errors
+            if(err){
+                try {
+                    const error = JSON.parse(err);
+                    console.log("Error message: ", error["message"]);
+                    console.log("Error status: ", error["status"]);
+                    res.status(error.status).send(error.message);
+                } catch (e) {
+                    console.log("Error in parsing error message: ", e);
+                    res.status(500).send("Internal Server Error");
+                }
+            } else {
+                res.Status(500).send("Internal Server Error");
+            }
+        }
+    );
 
 export default router;

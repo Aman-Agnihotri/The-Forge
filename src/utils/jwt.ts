@@ -16,7 +16,7 @@ if (!jwt_secret || !jwt_expiration) {
  * @param {string} userId - the user id for which to generate a token
  * @returns {string} a JSON Web Token that can be used to authenticate the user
  */
-export const generateToken = (userId: number) => {
+export const generateToken = (userId: string): string => {
     return jwt.sign({id: userId }, jwt_secret, {algorithm: "HS512" , expiresIn: jwt_expiration });
 }
 /**

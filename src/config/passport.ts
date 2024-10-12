@@ -20,20 +20,57 @@ passport.use(new GoogleStrategy({
     passReqToCallback: true
 }, async (Request, accessToken, refreshToken, profile, done) => {
     try {
-        //Find or create user in the database
-        const user = await prisma.users.upsert({
-            where: { email: profile.emails ? profile.emails[0].value : '' },
-            update: {
-                provider: 'google'
-            },
-            create: {
-                email: profile.emails ? profile.emails[0].value : '',
-                username: profile.displayName,
-                password: '',
-                provider: 'google', 
-            }
+
+        const email = profile.emails ? profile.emails[0].value : '';
+        
+        //Check if user with the same email already exists
+        const existingUser = await prisma.users.findUnique({
+            where: { email },
+            include: { providers: true }
         });
-        return done(null, user);
+        
+        if (existingUser) {
+            // Check if this provider is already linked
+            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'google');
+            
+            // if (!existingProvider) {
+            //     // Link this provider to the user
+            //     await prisma.userProvider.create({
+            //         data: {
+            //             providerName: 'google',
+            //             providerId: profile.id,
+            //             userId: existingUser.id
+            //         }
+            //     });
+            // }
+
+            if (!existingProvider) {
+                // Send an error message saying that an account with this email already exists
+                const error = {
+                    message: 'An account with this email already exists',
+                    status: 409 //Conflict
+                }
+                return done(JSON.stringify(error));
+            }
+
+            return done(null, existingUser); //Return the existing user
+
+        } else {
+            //Create new user
+            const newUser = await prisma.users.create({
+                data: {
+                    username: profile.displayName,
+                    email,
+                    providers: {
+                        create: {
+                            providerName: 'google',
+                            providerId: profile.id,
+                        }
+                    }
+                }
+            });
+            return done(null, newUser);
+        }
     } catch (error) {
         return done(error);
     }
@@ -55,24 +92,60 @@ passport.use(new GitHubStrategy({
     scope: ['user:email']
 }, async (Request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
     try {
-        //Find or create user in the database
-        const user = await prisma.users.upsert({
-            where: { email: profile.emails ? profile.emails[0].value : '' },
-            update: {
-                provider: 'github'
-            },
-            create: {
-                email: profile.emails ? profile.emails[0].value : '',
-                username: profile.username,
-                password: '',
-                provider: 'github',
-            }
+        const email = profile.emails ? profile.emails[0].value : '';
+        
+        //Check if user with the same email already exists
+        const existingUser = await prisma.users.findUnique({
+            where: { email },
+            include: { providers: true }
         });
-        return done(null, user);
+        
+        if (existingUser) {
+            // Check if this provider is already linked
+            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'github');
+            
+            // if (!existingProvider) {
+            //     // Link this provider to the user
+            //     await prisma.userProvider.create({
+            //         data: {
+            //             providerName: 'github',
+            //             providerId: profile.id,
+            //             userId: existingUser.id
+            //         }
+            //     });
+            // }
+
+            if (!existingProvider) {
+                // Send an error message saying that an account with this email already exists
+                const error = {
+                    message: 'An account with this email already exists',
+                    status: 409 //Conflict
+                }
+                return done(JSON.stringify(error));
+            }
+
+            return done(null, existingUser); //Return the existing user
+
+        } else {
+            //Create new user
+            const newUser = await prisma.users.create({
+                data: {
+                    username: profile.displayName,
+                    email,
+                    providers: {
+                        create: {
+                            providerName: 'github',
+                            providerId: profile.id,
+                        }
+                    }
+                }
+            });
+            return done(null, newUser);
+        }
     } catch (error) {
         return done(error);
     }
-}))
+}));
 
 if(!process.env.FACEBOOK_APP_ID) {
     throw new Error('FACEBOOK_APP_ID environment variable is not set');
@@ -91,20 +164,56 @@ passport.use(new FacebookStrategy({
     profileFields: ['id', 'displayName', 'email']
 }, async (Request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
     try {
-        //Find or create user in the database
-        const user = await prisma.users.upsert({
-            where: { email: profile.emails ? profile.emails[0].value : '' },
-            update: {
-                provider: 'facebook'
-            },
-            create: {
-                email: profile.emails ? profile.emails[0].value : '',
-                username: profile.displayName,
-                password: '',
-                provider: 'facebook',
-            }
+        const email = profile.emails ? profile.emails[0].value : '';
+        
+        //Check if user with the same email already exists
+        const existingUser = await prisma.users.findUnique({
+            where: { email },
+            include: { providers: true }
         });
-        return done(null, user);
+        
+        if (existingUser) {
+            // Check if this provider is already linked
+            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'facebook');
+            
+            // if (!existingProvider) {
+            //     // Link this provider to the user
+            //     await prisma.userProvider.create({
+            //         data: {
+            //             providerName: 'facebook',
+            //             providerId: profile.id,
+            //             userId: existingUser.id
+            //         }
+            //     });
+            // }
+
+            if (!existingProvider) {
+                // Send an error message saying that an account with this email already exists
+                const error = {
+                    message: 'An account with this email already exists',
+                    status: 409 //Conflict
+                }
+                return done(JSON.stringify(error));
+            }
+
+            return done(null, existingUser); //Return the existing user
+
+        } else {
+            //Create new user
+            const newUser = await prisma.users.create({
+                data: {
+                    username: profile.displayName,
+                    email,
+                    providers: {
+                        create: {
+                            providerName: 'facebook',
+                            providerId: profile.id,
+                        }
+                    }
+                }
+            });
+            return done(null, newUser);
+        }
     } catch (error) {
         return done(error);
     }
@@ -126,20 +235,56 @@ passport.use(new LinkedinStrategy({
     passReqToCallback: true
 }, async (Request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
     try {
-        //Find or create user in the database
-        const user = await prisma.users.upsert({
-            where: { email: profile.emails ? profile.emails[0].value : '' },
-            update: {
-                provider: 'linkedin'
-            },
-            create: {
-                email: profile.emails ? profile.emails[0].value : '',
-                username: profile.displayName,
-                password: '',
-                provider: 'linkedin',
-            }
+        const email = profile.emails ? profile.emails[0].value : '';
+        
+        //Check if user with the same email already exists
+        const existingUser = await prisma.users.findUnique({
+            where: { email },
+            include: { providers: true }
         });
-        return done(null, user);
+        
+        if (existingUser) {
+            // Check if this provider is already linked
+            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'linkedin');
+            
+            // if (!existingProvider) {
+            //     // Link this provider to the user
+            //     await prisma.userProvider.create({
+            //         data: {
+            //             providerName: 'linkedin',
+            //             providerId: profile.id,
+            //             userId: existingUser.id
+            //         }
+            //     });
+            // }
+
+            if (!existingProvider) {
+                // Send an error message saying that an account with this email already exists
+                const error = {
+                    message: 'An account with this email already exists',
+                    status: 409 //Conflict
+                }
+                return done(JSON.stringify(error));
+            }
+
+            return done(null, existingUser); //Return the existing user
+
+        } else {
+            //Create new user
+            const newUser = await prisma.users.create({
+                data: {
+                    username: profile.displayName,
+                    email,
+                    providers: {
+                        create: {
+                            providerName: 'linkedin',
+                            providerId: profile.id,
+                        }
+                    }
+                }
+            });
+            return done(null, newUser);
+        }
     } catch (error) {
         return done(error);
     }

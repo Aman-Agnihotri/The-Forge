@@ -17,6 +17,10 @@ import { prisma } from "../config/prisma";
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { username, email, password } = req.body;
 
+    if(!username || !email || !password){
+        return res.status(400).json({ message: "All fields are required." });
+    }
+
     try{
         //Check if the user already exists
         const user = await prisma.users.findUnique({ where: { email } });
@@ -66,6 +70,10 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         }
 
         //Verify password by comparing the hashed password
+        if (user.password === null) {
+            return res.status(401).json({ message: "A social login account with this email address already exists." });
+        }
+
         const validPassword = await verifyPassword(user.password, password);
         if(!validPassword){
             return res.status(401).json({ message: "Invalid password." });
