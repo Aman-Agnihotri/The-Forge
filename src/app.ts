@@ -4,6 +4,7 @@ import helmet from "helmet";
 import cors from "cors";
 
 import authRoutes from "./routes/authRoutes";
+import protectedRoutes from "./routes/protectedRoutes";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(helmet());
 app.use(cors());
 
 app.use("/v1/auth", authRoutes);
+app.use("/v1/api", protectedRoutes);
 
 app.get("/", (req, res) => {
     res.send("The Forge API is running. <a href='/auth/linkedin'>Login with Linkedin</a>");
