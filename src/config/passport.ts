@@ -36,17 +36,6 @@ passport.use(new GoogleStrategy({
         if (existingUser) {
             // Check if this provider is already linked
             const existingProvider = existingUser.providers.find(provider => provider.providerName === 'google');
-            
-            // if (!existingProvider) {
-            //     // Link this provider to the user
-            //     await prisma.userProvider.create({
-            //         data: {
-            //             providerName: 'google',
-            //             providerId: profile.id,
-            //             userId: existingUser.id
-            //         }
-            //     });
-            // }
 
             if (!existingProvider) {
                 // Send an error message saying that an account with this email already exists
@@ -105,17 +94,6 @@ passport.use(new GitHubStrategy({
         if (existingUser) {
             // Check if this provider is already linked
             const existingProvider = existingUser.providers.find(provider => provider.providerName === 'github');
-            
-            // if (!existingProvider) {
-            //     // Link this provider to the user
-            //     await prisma.userProvider.create({
-            //         data: {
-            //             providerName: 'github',
-            //             providerId: profile.id,
-            //             userId: existingUser.id
-            //         }
-            //     });
-            // }
 
             if (!existingProvider) {
                 // Send an error message saying that an account with this email already exists
@@ -175,17 +153,6 @@ passport.use(new FacebookStrategy({
         if (existingUser) {
             // Check if this provider is already linked
             const existingProvider = existingUser.providers.find(provider => provider.providerName === 'facebook');
-            
-            // if (!existingProvider) {
-            //     // Link this provider to the user
-            //     await prisma.userProvider.create({
-            //         data: {
-            //             providerName: 'facebook',
-            //             providerId: profile.id,
-            //             userId: existingUser.id
-            //         }
-            //     });
-            // }
 
             if (!existingProvider) {
                 // Send an error message saying that an account with this email already exists
@@ -244,17 +211,6 @@ passport.use(new LinkedinStrategy({
         if (existingUser) {
             // Check if this provider is already linked
             const existingProvider = existingUser.providers.find(provider => provider.providerName === 'linkedin');
-            
-            // if (!existingProvider) {
-            //     // Link this provider to the user
-            //     await prisma.userProvider.create({
-            //         data: {
-            //             providerName: 'linkedin',
-            //             providerId: profile.id,
-            //             userId: existingUser.id
-            //         }
-            //     });
-            // }
 
             if (!existingProvider) {
                 // Send an error message saying that an account with this email already exists
