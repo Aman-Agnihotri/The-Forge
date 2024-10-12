@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(helmet());
 app.use(cors());
 
-app.use("/auth", authRoutes);
+app.use("/v1/auth", authRoutes);
 
 app.get("/", (req, res) => {
     res.send("The Forge API is running. <a href='/auth/linkedin'>Login with Linkedin</a>");
