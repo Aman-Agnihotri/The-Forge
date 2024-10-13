@@ -16,6 +16,12 @@ export const getAllUsers = async (req: Request, res: Response) => {
                     select: {
                         role: true
                     }
+                },
+                providers: {
+                    select: {
+                        providerName: true,
+                        providerId: true
+                    }
                 }
             }
         });
@@ -39,6 +45,12 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response) =
                 roles: {
                     select: {
                         role: true
+                    }
+                },
+                providers: {
+                    select: {
+                        providerName: true,
+                        providerId: true
                     }
                 }
             }
@@ -65,12 +77,19 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
                     select: {
                         role: true
                     }
+                },
+                providers: {
+                    select: {
+                        providerName: true,
+                        providerId: true
+                    }
                 }
             }
         });
 
         if (!user) {
             res.status(404).json({ message: 'User not found' });
+            return;
         }
 
         res.json(user);
@@ -96,12 +115,19 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response): 
                     select: {
                         role: true
                     }
+                },
+                providers: {
+                    select: {
+                        providerName: true,
+                        providerId: true
+                    }
                 }
             }
         });
 
         if (!user) {
             res.status(404).json({ message: 'User not found' });
+            return;
         }
 
         res.json(user);
@@ -117,10 +143,13 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     if (!email){
         res.status(400).json({ message: 'Email is required' });
+        return;
     } else if (!username){
         res.status(400).json({ message: 'Username is required' });
+        return;
     } else if (!password){
         res.status(400).json({ message: 'Password is required' });
+        return;
     }
 
     try {
@@ -148,6 +177,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
             if (!role) {
                 res.status(400).json({ message: 'Role does not exist' });
+                return;
             }
 
             if (role?.id) {
@@ -157,6 +187,21 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
                         roleId: role.id
                     }
                 });
+            }
+        } else {
+            // If no role_name is provided, assign the default role
+            const defaultRole = await prisma.roles.findUnique({ where: { name: 'user' } });
+
+            if (defaultRole?.id) {
+                await prisma.user_role.create({
+                    data: {
+                        userId: newUser.id,
+                        roleId: defaultRole.id
+                    }
+                });
+            } else {
+                res.status(400).json({ message: 'default "user" role does not exist' });
+                return;
             }
         }
 
@@ -179,6 +224,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
     if (!email && !username && !role_name){
         res.status(400).json({ message: 'At least one field is required' });
+        return;
     }
 
     try {
@@ -197,9 +243,21 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
             if (!role) {
                 res.status(400).json({ message: 'Role does not exist' });
+                return;
             }
 
-            if (role?.id) {
+            //Check if the user is already connected to a role
+            const userRole = await prisma.user_role.findFirst({
+                where: {
+                    userId: id,
+                    roleId: role.id
+                }
+            });
+
+            if (userRole) {
+                userUpdateData.roleId = role.id; // Update the role
+
+            } else if (role?.id) {
                 await prisma.user_role.create({
                     data: {
                         userId: id,
@@ -265,6 +323,7 @@ export const restoreUser = async (req: Request, res: Response): Promise<void> =>
 
         if (!user?.deletedAt) {
             res.status(404).json({ message: 'User not found or not soft-deleted' });
+            return;
         }
 
         // Restore the user by setting deletedAt to null
@@ -291,7 +350,18 @@ export const permanentlyDeleteUser = async (req: Request, res: Response): Promis
 
         if (!user) {
             res.status(404).json({ message: 'User not found' });
+            return;
         }
+
+        // Delete the providers associated with the user
+        await prisma.user_provider.deleteMany({
+            where: { userId: id },
+        })
+
+        // Ensure the user is freed of any roles
+        await prisma.user_role.deleteMany({
+            where: { userId: id },
+        });
 
         // Permanently delete the user
         await prisma.users.delete({

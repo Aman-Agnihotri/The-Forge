@@ -24,6 +24,7 @@ export const getRoleById = async (req: Request, res: Response): Promise<void> =>
         })
         if (!role) {
             res.status(404).json({ message: 'Role not found' });
+            return;
         }
         res.json(role);
     } catch (error) {
@@ -65,6 +66,7 @@ export const updateRole = async (req: Request, res: Response) => {
 
         if (!updatedRole) {
             res.status(404).json({ message: 'Role not found' });
+            return;
         }
 
         res.json(updatedRole);
@@ -86,6 +88,7 @@ export const deleteRole = async (req: Request, res: Response) => {
 
         if (!role) {
             res.status(404).json({ message: 'Role not found' });
+            return;
         } else {
             await prisma.roles.delete({ where: { id } });
         }

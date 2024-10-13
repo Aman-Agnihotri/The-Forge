@@ -19,7 +19,7 @@ const router = Router();
 router.use(authenticateUser);
 
 // Get all users (Admin only)
-router.get('/',authorizeRoles(['admin']), getAllUsers);
+router.get('/', authorizeRoles(['admin']), getAllUsers);
 
 // Get all users, including soft deleted (Admin only)
 router.get('/all', authorizeRoles(['admin']), getAllUsersIncludingDeleted);

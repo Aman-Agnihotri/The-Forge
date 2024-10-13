@@ -15,7 +15,7 @@ import { prisma } from "../config/prisma";
  * @throws {HttpError} If the user already exists, or if an error occurs while registering the user.
  */
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { username, email, password } = req.body;
+    const { username, email, password, role_name } = req.body;
 
     if(!username || !email || !password){
         return res.status(400).json({ message: "All fields are required." });
@@ -36,6 +36,39 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
                 password: await hashPassword(password)
             }
         });
+
+        // If a role_name is provided, find the role and connect it
+        if (role_name) {
+            const role = await prisma.roles.findUnique({ where: { name: role_name } });
+
+            if (!role) {
+                res.status(400).json({ message: 'Role does not exist' });
+                return;
+            }
+
+            if (role?.id) {
+                await prisma.user_role.create({
+                    data: {
+                        userId: newUser.id,
+                        roleId: role.id
+                    }
+                });
+            }
+        } else {
+            // If no role_name is provided, assign the default role
+            const defaultRole = await prisma.roles.findUnique({ where: { name: 'user' } });
+            if (defaultRole?.id) {
+                await prisma.user_role.create({
+                    data: {
+                        userId: newUser.id,
+                        roleId: defaultRole.id
+                    }
+                });
+            } else {
+                res.status(400).json({ message: 'user role does not exist' });
+                return;
+            }
+        }
 
         //Generate a JWT for the new user
         const token = generateToken(newUser.id);
@@ -66,6 +99,11 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         const user = await prisma.users.findUnique({ where : { email } });
 
         if(!user){
+            return res.status(401).json({ message: "User not found with provided email address." });
+        }
+
+        //Check if the user is soft deleted
+        if(user.deletedAt){
             return res.status(401).json({ message: "User not found with provided email address." });
         }
 
