@@ -31,6 +31,7 @@ model user_provider {
   createdAt    DateTime @default(now()) @db.Timestamp(6)
 
   @@unique([providerName, providerId])      // Ensure no duplicate provider accounts
+  @@unique([userId, providerName])          // Ensure that a user can only link each provider once
 }
 
 model roles {
