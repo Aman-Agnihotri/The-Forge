@@ -5,6 +5,8 @@ import cors from "cors";
 
 import authRoutes from "./routes/authRoutes";
 import protectedRoutes from "./routes/protectedRoutes";
+import userRoutes from "./routes/userRoutes";
+import roleRoutes from "./routes/roleRoutes";
 
 dotenv.config();
 
@@ -16,6 +18,8 @@ app.use(cors());
 
 app.use("/v1/auth", authRoutes);
 app.use("/v1/api", protectedRoutes);
+app.use("/v1/users", userRoutes);
+app.use("/v1/roles", roleRoutes);
 
 app.get("/", (req, res) => {
     res.send("The Forge API is running. <a href='/auth/linkedin'>Login with Linkedin</a>");
