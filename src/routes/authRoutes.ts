@@ -15,10 +15,8 @@ router.post("/login", loginUser);
 router.post("/register", registerUser);
 
 //Google OAuth routes
-router.get('/google', 
-    passport.authenticate('google', {
-        scope: ['email', 'profile'] 
-    }));
+router.get('/google', passport.authenticate('google'));
+
 router.get('/google/callback', 
     passport.authenticate('google', { session: false }), (req: any, res: any) => {
     
@@ -48,10 +46,8 @@ router.get('/google/callback',
     );
 
 //Github OAuth routes
-router.get('/github', 
-    passport.authenticate('github', { 
-        scope: ['user:email'] 
-    }));
+router.get('/github', passport.authenticate('github'));
+
 router.get('/github/callback', 
     passport.authenticate('github', { session: false }), (req: any, res: any) => {
 
@@ -83,10 +79,8 @@ router.get('/github/callback',
     );
 
 //Facebook OAuth routes
-router.get('/facebook', 
-    passport.authenticate('facebook', { 
-        scope: ['email'] 
-    }));
+router.get('/facebook', passport.authenticate('facebook'));
+
 router.get('/facebook/callback',
     passport.authenticate('facebook', { session: false }), (req: any, res: any) => {
 
@@ -118,10 +112,8 @@ router.get('/facebook/callback',
     );
 
 //LinkedIn OAuth routes
-router.get('/linkedin', 
-    passport.authenticate('linkedin', { 
-        scope: ['r_emailaddress', 'r_liteprofile'] 
-    }));
+router.get('/linkedin', passport.authenticate('linkedin'));
+
 router.get('/linkedin/callback',
     passport.authenticate('linkedin', { session: false }), (req: any, res: any) => {
         if(req.user){

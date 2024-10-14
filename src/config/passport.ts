@@ -1,255 +1,220 @@
 import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as GoogleStrategy } from "passport-google-oauth2";
 import { Strategy as GitHubStrategy } from "passport-github2";
 import { Strategy as FacebookStrategy } from "passport-facebook";
 import { Strategy as LinkedinStrategy } from "passport-linkedin-oauth2";
 import { prisma } from "./prisma";
+import { verifyToken } from "../utils/jwt";
 
 const middle_api_auth_path = "/v1/auth";
 
-if (!process.env.HOST_CALLBACK_URL) {
-    throw new Error('HOST_CALLBACK_URL environment variable is not set');
-}
+// Define provider scopes
+const providerScopes: Record<string, string[]> = {
+    google: ['email', 'profile'],
+    github: ['user:email'],
+    facebook: ['email'],
+    linkedin: ['r_emailaddress', 'r_liteprofile']
+};
 
-if (!process.env.GOOGLE_CLIENT_ID) {
-    throw new Error('GOOGLE_CLIENT_ID environment variable is not set');
-} else if (!process.env.GOOGLE_CLIENT_SECRET) {
-    throw new Error('GOOGLE_CLIENT_SECRET environment variable is not set');
-}
+/**
+ * Creates an OAuth strategy for a given provider.
+ * @param {string} provider The provider of the OAuth strategy.
+ * @param {object} options The options for the OAuth strategy.
+ * @param {function} verify The verify function for the OAuth strategy.
+ * @returns {OAuthStrategy} The OAuth strategy for the given provider.
+ */
+const createStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin', options: any, verify: any) => {
+    const strategies = {
+        google: GoogleStrategy,
+        github: GitHubStrategy,
+        facebook: FacebookStrategy,
+        linkedin: LinkedinStrategy
+    };
 
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.HOST_CALLBACK_URL + middle_api_auth_path + "/google/callback",
-    passReqToCallback: true
-}, async (Request, accessToken, refreshToken, profile, done) => {
-    try {
+    const Strategy = strategies[provider];
 
-        const email = profile.emails ? profile.emails[0].value : '';
-        
-        //Check if user with the same email already exists
-        const existingUser = await prisma.users.findUnique({
-            where: { email },
-            include: { providers: true }
-        });
-        
-        if (existingUser) {
-            // Check if this provider is already linked
-            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'google');
-
-            if (!existingProvider) {
-                // Send an error message saying that an account with this email already exists
-                const error = {
-                    message: 'An account with this email already exists',
-                    status: 409 //Conflict
-                }
-                return done(JSON.stringify(error));
-            }
-
-            return done(null, existingUser); //Return the existing user
-
-        } else {
-            //Create new user
-            const newUser = await prisma.users.create({
-                data: {
-                    username: profile.displayName,
-                    email,
-                    providers: {
-                        create: {
-                            providerName: 'google',
-                            providerId: profile.id,
-                        }
-                    }
-                }
-            });
-            return done(null, newUser);
-        }
-    } catch (error) {
-        return done(error);
+    if (!Strategy) {
+        throw new Error(`Unsupported strategy provider: ${provider}`);
     }
-}));
 
-if (!process.env.GITHUB_CLIENT_ID) {
-    throw new Error('GITHUB_CLIENT_ID environment variable is not set');
-} else if (!process.env.GITHUB_CLIENT_SECRET) {
-    throw new Error('GITHUB_CLIENT_SECRET environment variable is not set');
+    if (provider === 'google') {
+        return new GoogleStrategy(options, verify);
+    } else if (provider === 'github') {
+        return new GitHubStrategy(options, verify);
+    } else if (provider === 'facebook') {
+        return new FacebookStrategy(options, verify);
+    } else if (provider === 'linkedin') {
+        return new LinkedinStrategy(options, verify);
+    } else {
+        throw new Error(`Unsupported strategy provider: ${provider}`);
+    }
 }
 
-passport.use(new GitHubStrategy({
-    clientID: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.HOST_CALLBACK_URL + middle_api_auth_path + "/github/callback",
-    passReqToCallback: true,
-    scope: ['user:email']
-}, async (Request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
+/**
+ * Links an OAuth provider to a user's account.
+ *
+ * This function takes a JWT token (from the state parameter), verifies it, and
+ * uses it to get the user ID. It then checks if the given provider is already
+ * linked to the user's account, and if not, links it.
+ *
+ * @param {string} token - JWT token from the state parameter
+ * @param {object} profile - OAuth profile object
+ * @param {function} done - passport callback function
+ */
+async function linkProvider(token: string, profile: any, done: (error: any, user?: any) => void) {
+    let decoded;
+    let loggedInUserId: string;
     try {
-        const email = profile.emails ? profile.emails[0].value : '';
-        
-        //Check if user with the same email already exists
-        const existingUser = await prisma.users.findUnique({
-            where: { email },
-            include: { providers: true }
-        });
-        
-        if (existingUser) {
-            // Check if this provider is already linked
-            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'github');
-
-            if (!existingProvider) {
-                // Send an error message saying that an account with this email already exists
-                const error = {
-                    message: 'An account with this email already exists',
-                    status: 409 //Conflict
-                }
-                return done(JSON.stringify(error));
-            }
-
-            return done(null, existingUser); //Return the existing user
-
+        decoded = verifyToken(token);
+        if (typeof decoded !== 'string' && 'id' in decoded) {
+            loggedInUserId = decoded.id;
         } else {
-            //Create new user
-            const newUser = await prisma.users.create({
-                data: {
-                    username: profile.displayName,
-                    email,
-                    providers: {
-                        create: {
-                            providerName: 'github',
-                            providerId: profile.id,
-                        }
-                    }
-                }
-            });
-            return done(null, newUser);
+            throw new Error('Invalid or expired JWT token');
         }
-    } catch (error) {
-        return done(error);
+    } catch (err) {
+        return done(JSON.stringify({
+            message: 'Invalid or expired JWT token',
+            status: 401
+        }));
     }
-}));
 
-if(!process.env.FACEBOOK_APP_ID) {
-    throw new Error('FACEBOOK_APP_ID environment variable is not set');
-} else if (!process.env.FACEBOOK_APP_SECRET) {
-    throw new Error('FACEBOOK_APP_SECRET environment variable is not set');
+    // Check if provider is already linked
+    const existingProvider = await prisma.user_provider.findFirst({
+        where: {
+            userId: loggedInUserId,
+            providerName: profile.provider
+        }
+    });
+
+    if (existingProvider) {
+        return done(JSON.stringify({
+            message: 'This provider is already linked to your account',
+            status: 409
+        }));
+    }
+
+    // Link the new provider to the user
+    const updatedUser = await prisma.users.update({
+        where: { id: loggedInUserId },
+        data: {
+            providers: {
+                create: {
+                    providerName: profile.provider,
+                    providerId: profile.id,
+                }
+            }
+        }
+    });
+    return done(null, updatedUser);
 }
 
-passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: process.env.HOST_CALLBACK_URL + middle_api_auth_path + "/facebook/callback",
-    passReqToCallback: true,
-    enableProof: true,
-    profileFields: ['id', 'displayName', 'email']
-}, async (Request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
-    try {
-        const email = profile.emails ? profile.emails[0].value : '';
-        
-        //Check if user with the same email already exists
-        const existingUser = await prisma.users.findUnique({
-            where: { email },
-            include: { providers: true }
-        });
-        
-        if (existingUser) {
-            // Check if this provider is already linked
-            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'facebook');
+/**
+ * Handles OAuth authentication by creating a new user if not already present, 
+ * linking the provider to the user, and generating a JWT token.
+ *
+ * @param {object} profile - OAuth profile object
+ * @param {function} done - passport callback function
+ */
+async function authenticateSessionJWT(profile: any, done: (error: any, user?: any) => void) {
+    const email = profile.emails ? profile.emails[0].value : '';
 
-            if (!existingProvider) {
-                // Send an error message saying that an account with this email already exists
-                const error = {
-                    message: 'An account with this email already exists',
-                    status: 409 //Conflict
-                }
-                return done(JSON.stringify(error));
-            }
+    console.log("Email: ", email);
+    
+    console.log("Now checking if user exists...");
+    const existingUser = await prisma.users.findUnique({
+        where: { email },
+        include: { providers: true }
+    });
 
-            return done(null, existingUser); //Return the existing user
-
-        } else {
-            //Create new user
-            const newUser = await prisma.users.create({
-                data: {
-                    username: profile.displayName,
-                    email,
-                    providers: {
-                        create: {
-                            providerName: 'facebook',
-                            providerId: profile.id,
-                        }
-                    }
-                }
-            });
-            return done(null, newUser);
+    if (existingUser) {
+        // Check if this provider is already linked
+        console.log("Checking if this provider is already linked with another account...");
+        const existingProvider = existingUser.providers.find(provider => provider.providerName === profile.provider);
+        if (!existingProvider) {
+            console.log("This account is already linked to a different provider");
+            return done(JSON.stringify({
+                message: 'An account with this email already exists',
+                status: 409
+            }));
         }
-    } catch (error) {
-        return done(error);
+        console.log("Found existing user: ", existingUser);
+        return done(null, existingUser); // Returning the existing user
     }
-}));
 
-if (!process.env.LINKEDIN_CLIENT_ID) {
-    throw new Error('LINKEDIN_CLIENT_ID environment variable is not set');
-} else if (!process.env.LINKEDIN_CLIENT_SECRET) {
-    throw new Error('LINKEDIN_CLIENT_SECRET environment variable is not set');
+    // Create new user
+    console.log("Creating new user...");
+    const newUser = await prisma.users.create({
+        data: {
+            username: profile.displayName,
+            email,
+            providers: {
+                create: {
+                    providerName: profile.provider,
+                    providerId: profile.id,
+                }
+            }
+        }
+    });
+
+    console.log("New user created: ", newUser);
+    return done(null, newUser);
 }
 
-passport.use(new LinkedinStrategy({
-    clientID: process.env.LINKEDIN_CLIENT_ID,
-    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-    callbackURL: process.env.HOST_CALLBACK_URL + middle_api_auth_path + "/linkedin/callback",
-    scope: ['r_emailaddress', 'r_liteprofile'],
-    passReqToCallback: true
-}, async (Request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
-    try {
-        const email = profile.emails ? profile.emails[0].value : '';
-        
-        //Check if user with the same email already exists
-        const existingUser = await prisma.users.findUnique({
-            where: { email },
-            include: { providers: true }
-        });
-        
-        if (existingUser) {
-            // Check if this provider is already linked
-            const existingProvider = existingUser.providers.find(provider => provider.providerName === 'linkedin');
-
-            if (!existingProvider) {
-                // Send an error message saying that an account with this email already exists
-                const error = {
-                    message: 'An account with this email already exists',
-                    status: 409 //Conflict
-                }
-                return done(JSON.stringify(error));
-            }
-
-            return done(null, existingUser); //Return the existing user
-
-        } else {
-            //Create new user
-            const newUser = await prisma.users.create({
-                data: {
-                    username: profile.displayName,
-                    email,
-                    providers: {
-                        create: {
-                            providerName: 'linkedin',
-                            providerId: profile.id,
-                        }
-                    }
-                }
-            });
-            return done(null, newUser);
-        }
-    } catch (error) {
-        return done(error);
+/**
+ * Sets up a Passport OAuth strategy for the given provider.
+ *
+ * @param {string} provider - The provider to set up (e.g. 'google', 'github', 'facebook', 'linkedin')
+ * @throws {Error} If the provider's client ID or secret is not set in the environment variables
+ */
+const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin') => {
+    if (!process.env[`${provider.toUpperCase()}_CLIENT_ID`] || !process.env[`${provider.toUpperCase()}_CLIENT_SECRET`]) {
+        throw new Error(`${provider.toUpperCase()}_CLIENT_ID or ${provider.toUpperCase()}_CLIENT_SECRET environment variable is not set`);
     }
-}));
+
+    const baseCallbackURL = `${process.env.HOST_CALLBACK_URL}${middle_api_auth_path}/${provider}/callback`;
+
+    passport.use(provider,
+        createStrategy(provider, {
+            clientID: process.env[`${provider.toUpperCase()}_CLIENT_ID`],
+            clientSecret: process.env[`${provider.toUpperCase()}_CLIENT_SECRET`],
+            callbackURL: baseCallbackURL,
+            passReqToCallback: true,
+            enableProof: true,                              //For Facebook exclusively
+            scope: providerScopes[provider],
+            profileFields: ['id', 'displayName', 'email']   //For Facebook exclusively
+            }, 
+            async (request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
+                try {
+
+                    console.log(profile.provider.toUpperCase() + " profile: ", profile);
+
+                    // Check if we are linking the provider to an existing user (JWT provided in state)
+                    const token = request.query.state as string;
+                    if (token) {
+                        return await linkProvider(token, profile, done);
+                    } else {
+                        // Handle new user creation or login
+                        return await authenticateSessionJWT(profile, done);
+                    }
+
+                } catch (error) {
+                    return done(error);
+                }
+            }
+        )
+    )
+}
+
+setupOAuthStrategy('google');
+setupOAuthStrategy('github');
+setupOAuthStrategy('facebook');
+setupOAuthStrategy('linkedin');
 
 passport.serializeUser((user: any, done) => {
     done(null, user.id); // Serialize the user ID into the session
 });
 
 passport.deserializeUser( async (id: string, done) => {
-
     try {
         //Find user by id and deserialize the user from the session
         const user = await prisma.users.findUnique({ where: { id } })
@@ -257,7 +222,6 @@ passport.deserializeUser( async (id: string, done) => {
     } catch (error) {
         done(error, null);
     }
-    
 });
 
 export default passport;
