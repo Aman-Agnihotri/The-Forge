@@ -61,7 +61,7 @@ const createStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin',
  * @param {object} profile - OAuth profile object
  * @param {function} done - passport callback function
  */
-async function linkProvider(token: string, profile: any, done: (error: any, user?: any) => void) {
+async function linkProvider(token: string, profile: any, done: (error: any, user?: any, info?: any) => void) {
     let decoded;
     let loggedInUserId: string;
     try {
@@ -105,7 +105,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
             }
         }
     });
-    return done(null, updatedUser);
+    return done(null, updatedUser, token);
 }
 
 /**
@@ -117,10 +117,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
  */
 async function authenticateSessionJWT(profile: any, done: (error: any, user?: any) => void) {
     const email = profile.emails ? profile.emails[0].value : '';
-
-    console.log("Email: ", email);
     
-    console.log("Now checking if user exists...");
     const existingUser = await prisma.users.findUnique({
         where: { email },
         include: { providers: true }
@@ -128,21 +125,17 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
 
     if (existingUser) {
         // Check if this provider is already linked
-        console.log("Checking if this provider is already linked with another account...");
         const existingProvider = existingUser.providers.find(provider => provider.providerName === profile.provider);
         if (!existingProvider) {
-            console.log("This account is already linked to a different provider");
             return done(JSON.stringify({
                 message: 'An account with this email already exists',
                 status: 409
             }));
         }
-        console.log("Found existing user: ", existingUser);
         return done(null, existingUser); // Returning the existing user
     }
 
     // Create new user
-    console.log("Creating new user...");
     const newUser = await prisma.users.create({
         data: {
             username: profile.displayName,
@@ -156,7 +149,6 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
         }
     });
 
-    console.log("New user created: ", newUser);
     return done(null, newUser);
 }
 
@@ -183,7 +175,7 @@ const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linked
             scope: providerScopes[provider],
             profileFields: ['id', 'displayName', 'email']   //For Facebook exclusively
             }, 
-            async (request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any) => void) => {
+            async (request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any, info?: any) => void) => {
                 try {
 
                     console.log(profile.provider.toUpperCase() + " profile: ", profile);
