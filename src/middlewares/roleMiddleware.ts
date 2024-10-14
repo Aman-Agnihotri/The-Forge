@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 
 // Middleware to authorize roles
 export const authorizeRoles = (roles: string[]) => {
-    return (req: Request, res: Response, next: NextFunction): void => {
+    return (req: Request, res: Response, next: NextFunction) => {
         const user = (req as any).user; // Access the authenticated user from the request
 
         if (!user) {

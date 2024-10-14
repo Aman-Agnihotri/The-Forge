@@ -8,14 +8,16 @@ export const getAllRoles = async (req: Request, res: Response) => {
             select: { id: true, name: true }
         });
         res.json(roles);
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 };
 
 // Get role by ID
-export const getRoleById = async (req: Request, res: Response): Promise<void> => {
+export const getRoleById = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         const role = await prisma.roles.findUnique({
@@ -30,6 +32,7 @@ export const getRoleById = async (req: Request, res: Response): Promise<void> =>
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 }
 
@@ -42,13 +45,16 @@ export const createRole = async (req: Request, res: Response) => {
         const newRole = await prisma.roles.create({ data: { name } });
 
         res.status(201).json(newRole);
+        return;
     } catch (error) {
         if ((error as any).code === 'P2002') {
             // Handle unique constraint violations (e.g., role name already exists)
             res.status(400).json({ message: 'Role name already exists' });
+            return;
         } else {
             console.error(error);
             res.status(500).json({ message: 'Server error' });
+            return;
         }
     }
 };
@@ -70,9 +76,11 @@ export const updateRole = async (req: Request, res: Response) => {
         }
 
         res.json(updatedRole);
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 }
 
@@ -94,8 +102,10 @@ export const deleteRole = async (req: Request, res: Response) => {
         }
 
         res.json({ message: 'Role deleted successfully' });
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 }

@@ -42,8 +42,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
             const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
             if (!role) {
-                res.status(400).json({ message: 'Role does not exist' });
-                return;
+                return res.status(400).json({ message: 'Role does not exist' });
             }
 
             if (role?.id) {
@@ -65,17 +64,16 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
                     }
                 });
             } else {
-                res.status(400).json({ message: 'user role does not exist' });
-                return;
+                return res.status(400).json({ message: 'user role does not exist' });
             }
         }
 
         //Generate a JWT for the new user
         const token = generateToken(newUser.id);
-        res.status(201).json({ token, user: newUser });
+        return res.status(201).json({ token, user: newUser });
     } catch (error) {
         console.error(error);
-        res.status(500).json({
+        return res.status(500).json({
             message: "An error occurred while registering the user.",
         })
 }};
@@ -119,9 +117,9 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 
         //Generate a JWT for the user
         const token = generateToken(user.id);
-        res.status(200).json({ token, user });
+        return res.status(200).json({ token, user });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "An error occurred while logging in." });
+        return res.status(500).json({ message: "An error occurred while logging in." });
     }
 };

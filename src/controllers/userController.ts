@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
-import argon2 from 'argon2';
-
+import { hashPassword, verifyPassword } from '../utils/passwordHash';
 // Get all users (Admin only)
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
@@ -26,9 +25,11 @@ export const getAllUsers = async (req: Request, res: Response) => {
             }
         });
         res.json(users);
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 };
 
@@ -56,14 +57,16 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response) =
             }
         });
         res.json(users);
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 };
 
 // Get a user by ID
-export const getUserById = async (req: Request, res: Response): Promise<void> => {
+export const getUserById = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         const user = await prisma.users.findUnique({
@@ -93,14 +96,16 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
         }
 
         res.json(user);
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 };
 
 // Get a user by ID, including soft deleted users (Admin only)
-export const getUserByIdIncludingDeleted = async (req: Request, res: Response): Promise<void> => {
+export const getUserByIdIncludingDeleted = async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         const user = await prisma.users.findUnique({
@@ -134,11 +139,12 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response): 
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 };
 
 // Create a new user (Admin only)
-export const createUser = async (req: Request, res: Response): Promise<void> => {
+export const createUser = async (req: Request, res: Response) => {
     const { email, username, password, role_name } = req.body;
 
     if (!email){
@@ -154,14 +160,14 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     try {
         // Hash the password (only for non-OAuth users)
-        const hashedPassword = password ? await argon2.hash(password) : null;
+        const hashed_password = await hashPassword(password);
 
         // Create a new user
         const newUser = await prisma.users.create({
             data: {
                 username,
                 email,
-                password: hashedPassword,
+                password: hashed_password,
             },
             select: {
                 id: true, 
@@ -206,19 +212,22 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         }
 
         res.status(201).json(newUser);
+        return;
     } catch (error) {
         if ((error as any).code === 'P2002') {
             // Handle unique constraint violations (e.g., email/username already exists)
             res.status(400).json({ message: 'Email or username already exists' });
+            return;
         } else {
             console.error(error);
             res.status(500).json({ message: 'Server error' });
+            return;
         }
     }
 };
 
 // Update a user
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
+export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { email, username, role_name } = req.body;
 
@@ -279,13 +288,16 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
         });
 
         res.json(updatedUser);
+        return;
     } catch (error) {
         if ((error as any).code === 'P2025') {
             // Record not found
             res.status(404).json({ message: 'User not found' });
+            return;
         } else {
             console.error(error);
             res.status(500).json({ message: 'Server error' });
+            return;
         }
     }
 };
@@ -301,18 +313,21 @@ export const deleteUser = async (req: Request, res: Response) => {
         });
 
         res.json({ message: 'User deleted successfully' });
+        return;
     } catch (error) {
         if ((error as any).code === 'P2025') {
             res.status(404).json({ message: 'User not found' });
+            return;
         } else {
             console.error(error);
             res.status(500).json({ message: 'Server error' });
+            return;
         }
     }
 };
 
 // Restore a soft-deleted user (Admin only)
-export const restoreUser = async (req: Request, res: Response): Promise<void> => {
+export const restoreUser = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
@@ -333,14 +348,16 @@ export const restoreUser = async (req: Request, res: Response): Promise<void> =>
         });
 
         res.json({ message: 'User restored successfully' });
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 };
 
 // Permanently delete a user (Admin only)
-export const permanentlyDeleteUser = async (req: Request, res: Response): Promise<void> => {
+export const permanentlyDeleteUser = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
@@ -369,8 +386,10 @@ export const permanentlyDeleteUser = async (req: Request, res: Response): Promis
         });
 
         res.json({ message: 'User permanently deleted successfully' });
+        return;
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
+        return;
     }
 };

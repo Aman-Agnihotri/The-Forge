@@ -22,6 +22,8 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
             if (typeof decodedUser !== 'string' && 'id' in decodedUser) {
                 user_id = decodedUser.id;
+            } else {
+                return res.status(401).json({ message: 'Invalid token payload' });
             }
 
             const user = await prisma.users.findUnique({ where: { id: user_id },
@@ -39,21 +41,21 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
             });
 
             if (!user) {
-                res.status(401).json({ message: 'User not found' });
-                return;
+                return res.status(401).json({ message: 'User not found' });
             }
 
             (req as any).user = user;
             return next();
         } catch (error) {
-            res.status(403).json({ message: "Invalid or expired authentication token" });
+            console.error("Token verification error: " + error);
+            return res.status(403).json({ message: "Invalid or expired authentication token" });
         }
     }
 
     // If no token, check if OAuth user is authenticated via Passport session
-    if(req.isAuthenticated?.()) {
-        return next(); // User is authenticated via OAuth, proceed to the next middleware
-    }
+    // if(req.isAuthenticated?.()) {
+    //     return next(); // User is authenticated via OAuth, proceed to the next middleware
+    // }
 
-    res.status(401).json({ message: "Unauthorized, please log in" });
+    return res.status(401).json({ message: "Unauthorized, please log in" });
 };
