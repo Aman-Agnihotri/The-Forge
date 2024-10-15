@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { loginUser, registerUser } from "../controllers/authController";
+import dotenv from "dotenv";
+import { prisma } from "../config/prisma";
 import passport from "../config/passport";
 import { generateToken, verifyToken } from "../utils/jwt";
-import dotenv from "dotenv";
+import { loginUser, registerUser } from "../controllers/authController";
+import { authenticateUser } from "../middlewares/authMiddleware";
 
 dotenv.config();
 
@@ -93,5 +95,50 @@ router.get("/:provider/callback", (req, res, next) => {
         }
     })(req, res, next);
 });
+
+router.delete("/unlink/:provider", authenticateUser, async (req, res) => {
+    const provider = req.params.provider;
+    const userId = (req as any).user.id;
+
+    try {
+        // Check if the provider is linked to the user
+        const existingProvider = await prisma.user_provider.findFirst({
+            where: {
+                userId: userId,
+                providerName: provider
+            }
+        });
+
+        if (!existingProvider) {
+            res.status(404).json({ message: `No linked ${provider} account found for this user.` });
+            return;
+        }
+
+        // Ensure the user has another provider or email/password login
+        const otherProviders = await prisma.user_provider.count({
+            where: { userId: userId, providerName: { not: provider } }
+        });
+
+        const user = await prisma.users.findUnique({ where: { id: userId } });
+        if (!user?.password && otherProviders === 0) {
+            res.status(400).json({ message: 'Cannot unlink the last provider. Add a password or another provider before unlinking.' });
+            return;
+        }
+
+        // Unlink the provider by deleting the record
+        await prisma.user_provider.delete({
+            where: {
+                id: existingProvider.id
+            }
+        });
+
+        res.json({ message: `${provider} account unlinked successfully.` });
+        return;
+    } catch (error) {
+        console.error("Error unlinking provider:", error);
+        res.status(500).json({ message: "An error occurred while unlinking the provider." });
+        return;
+    }
+})
 
 export default router;
