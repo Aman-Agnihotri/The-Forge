@@ -93,6 +93,18 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         }));
     }
 
+    const existingUserEmail = await prisma.users.findUnique({
+        where: { id: loggedInUserId },
+        select: { email: true }
+    });
+    // Check if the OAuth account that the user is trying to link has the same email as the logged in user
+    if (existingUserEmail && existingUserEmail.email !== profile.emails[0].value) {
+        return done(JSON.stringify({
+            message: 'The OAuth account that you are trying to link has a different email than your account',
+            status: 409
+        }));
+    }
+
     // Link the new provider to the user
     const updatedUser = await prisma.users.update({
         where: { id: loggedInUserId },

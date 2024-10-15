@@ -255,8 +255,15 @@ export const updateUser = async (req: Request, res: Response) => {
         if(password){
             if (id_of_user_to_update === user?.id) {
                 userUpdateData.password = await hashPassword(password);
+                console.log("User is updating their own password.");
+
+                // Check if the authenticated user is an admin
+            } else if(authenticatedUser.roles.every((role: any) => role.role.name === 'admin')) {
+                userUpdateData.password = await hashPassword(password);
+                console.log("User is an admin and is updating another user's password.");
+
             } else {
-                res.status(400).json({ message: 'You can only change your own password' });
+                res.status(403).json({ message: 'You do not have permission to update this user. You can only change your own password. Please contact an admin for additional help.' });
                 return;
             }
         }
