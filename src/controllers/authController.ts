@@ -70,7 +70,11 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
 
         //Generate a JWT for the new user
         const token = generateToken(newUser.id);
-        return res.status(201).json({ token, user: newUser });
+
+        // Remove all fields from the user object except username and id before returning
+        const filteredUserData = { id: newUser.id, username: newUser.username };
+
+        return res.status(201).json({ token, user: filteredUserData });
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -117,7 +121,11 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 
         //Generate a JWT for the user
         const token = generateToken(user.id);
-        return res.status(200).json({ token, user });
+
+        // Remove all fields from the user object except username and id before returning
+        const filteredUserData = { id: user.id, username: user.username };
+
+        return res.status(200).json({ token, user: filteredUserData });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "An error occurred while logging in." });

@@ -96,6 +96,7 @@ router.get("/:provider/callback", (req, res, next) => {
     })(req, res, next);
 });
 
+//OAuth unlink route
 router.delete("/unlink/:provider", authenticateUser, async (req, res) => {
     const provider = req.params.provider;
     const userId = (req as any).user.id;
