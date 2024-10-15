@@ -79,8 +79,9 @@ router.get("/:provider/callback", (req, res, next) => {
             let token: string;
 
             //If token is returned in the info parameter, reuse it. Else generate a new one
-            if (info) {
+            if (info.length > 5) {
                 token = info;
+                console.log("Found token: ", token);
             } else {
                 token = generateToken(user.id as string);
             }

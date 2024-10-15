@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
-import { hashPassword, verifyPassword } from '../utils/passwordHash';
+import { hashPassword } from '../utils/passwordHash';
+
 // Get all users (Admin only)
 export const getAllUsers = async (req: Request, res: Response) => {
     try {
@@ -229,9 +230,13 @@ export const createUser = async (req: Request, res: Response) => {
 // Update a user
 export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { email, username, role_name } = req.body;
+    const id_of_user_to_update = id;
+    const { email, username, password, role_name } = req.body;
 
-    if (!email && !username && !role_name){
+    const authenticatedUser = req.user as any;
+    const user = await prisma.users.findUnique({ where: { id: authenticatedUser.id } });
+
+    if (!email && !username && !password && !role_name){
         res.status(400).json({ message: 'At least one field is required' });
         return;
     }
@@ -240,10 +245,20 @@ export const updateUser = async (req: Request, res: Response) => {
         const userUpdateData: any = {};
 
         if(username){
-            userUpdateData.email = email;
             userUpdateData.username = username;
-        } else {
+        }
+
+        if(email){
             userUpdateData.email = email;
+        }
+
+        if(password){
+            if (id_of_user_to_update === user?.id) {
+                userUpdateData.password = await hashPassword(password);
+            } else {
+                res.status(400).json({ message: 'You can only change your own password' });
+                return;
+            }
         }
 
         // If a new roleName is provided, find the role and connect it
@@ -258,7 +273,7 @@ export const updateUser = async (req: Request, res: Response) => {
             //Check if the user is already connected to a role
             const userRole = await prisma.user_role.findFirst({
                 where: {
-                    userId: id,
+                    userId: id_of_user_to_update,
                     roleId: role.id
                 }
             });
@@ -269,7 +284,7 @@ export const updateUser = async (req: Request, res: Response) => {
             } else if (role?.id) {
                 await prisma.user_role.create({
                     data: {
-                        userId: id,
+                        userId: id_of_user_to_update,
                         roleId: role.id
                     }
                 });
@@ -277,7 +292,7 @@ export const updateUser = async (req: Request, res: Response) => {
         }
 
         const updatedUser = await prisma.users.update({
-            where: { id },
+            where: { id: id_of_user_to_update },
             data: userUpdateData,
             select: { 
                 id: true,
