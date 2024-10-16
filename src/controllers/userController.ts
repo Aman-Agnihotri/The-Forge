@@ -358,8 +358,11 @@ export const restoreUser = async (req: Request, res: Response) => {
             where: { id, deletedAt: { not: null } }
         });
 
-        if (!user?.deletedAt) {
-            res.status(404).json({ message: 'User not found or not soft-deleted' });
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        } else if (!user.deletedAt) {
+            res.status(400).json({ message: 'User is not soft-deleted' });
             return;
         }
 

@@ -5,7 +5,20 @@ import { prisma } from '../config/prisma'; // Import Prisma client
 export const getAllRoles = async (req: Request, res: Response) => {
     try {
         const roles = await prisma.roles.findMany({
-            select: { id: true, name: true }
+            select: { 
+                id: true, 
+                name: true,
+                users: {
+                    select: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true
+                            }
+                        }
+                    }
+                } 
+            }
         });
         res.json(roles);
         return;
@@ -22,7 +35,20 @@ export const getRoleById = async (req: Request, res: Response) => {
     try {
         const role = await prisma.roles.findUnique({
             where: { id },
-            select: { id: true, name: true }
+            select: { 
+                id: true, 
+                name: true,
+                users: {
+                    select: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true
+                            }
+                        }
+                    }
+                } 
+            }
         })
         if (!role) {
             res.status(404).json({ message: 'Role not found' });
@@ -40,9 +66,21 @@ export const getRoleById = async (req: Request, res: Response) => {
 export const createRole = async (req: Request, res: Response) => {
     const { name } = req.body;
 
+    // Check if the role is given in the request body
+    if (!name) {
+        res.status(400).json({ message: 'Role name is required' });
+        return;
+    }
+
     try {
         // Create the new role
-        const newRole = await prisma.roles.create({ data: { name } });
+        const newRole = await prisma.roles.create({ 
+            data: { name },
+            select: {
+                id: true,
+                name: true
+            }
+        });
 
         res.status(201).json(newRole);
         return;
@@ -64,10 +102,30 @@ export const updateRole = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name } = req.body;
 
+    // Check if the role is given in the request body
+    if (!name) {
+        res.status(400).json({ message: 'Role name is required' });
+        return;
+    }
+
     try {
         const updatedRole = await prisma.roles.update({
             where: { id },
-            data: { name }
+            data: { name },
+            select: { 
+                id: true, 
+                name: true,
+                users: {
+                    select: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true
+                            }
+                        }
+                    }
+                } 
+            }
         });
 
         if (!updatedRole) {
@@ -97,10 +155,16 @@ export const deleteRole = async (req: Request, res: Response) => {
         if (!role) {
             res.status(404).json({ message: 'Role not found' });
             return;
-        } else {
-            await prisma.roles.delete({ where: { id } });
         }
-
+        
+        // Disconect all users from the role
+        await prisma.user_role.deleteMany({
+            where: { roleId: id }
+        });
+        
+        // Delete the role
+        await prisma.roles.delete({ where: { id } });
+            
         res.json({ message: 'Role deleted successfully' });
         return;
     } catch (error) {
