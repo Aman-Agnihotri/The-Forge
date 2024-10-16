@@ -27,14 +27,20 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
             }
 
             const user = await prisma.users.findUnique({ where: { id: user_id },
-                include:{
+                select: { 
+                    id: true,
+                    username: true,
+                    email: true,
+                    createdAt: true,
                     roles: {
                         select: {
-                            role: {
-                                select: {
-                                    name: true
-                                }
-                            }
+                            role: true
+                        }
+                    },
+                    providers: {
+                        select: {
+                            providerName: true,
+                            providerId: true
                         }
                     }
                 }

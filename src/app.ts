@@ -6,8 +6,8 @@ import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/authRoutes";
 import protectedRoutes from "./routes/protectedRoutes";
-import userRoutes from "./routes/userRoutes";
-import roleRoutes from "./routes/roleRoutes";
+
+import { useRateLimitMiddleware } from "./middlewares/rateLimitMiddleware";
 
 dotenv.config();
 
@@ -29,9 +29,7 @@ const ipRateLimiter = rateLimit({
 app.use(ipRateLimiter);
 
 app.use("/v1/auth", authRoutes);
-app.use("/v1/api", protectedRoutes);
-app.use("/v1/users", userRoutes);
-app.use("/v1/roles", roleRoutes);
+app.use("/v1/api", useRateLimitMiddleware, protectedRoutes);
 
 app.get("/", (req, res) => {
     res.send("The Forge API is running. <a href='/auth/linkedin'>Login with Linkedin</a>");
