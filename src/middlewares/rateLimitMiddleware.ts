@@ -1,10 +1,43 @@
 import { RateLimiterMemory } from "rate-limiter-flexible";
+import rateLimit from "express-rate-limit";
 import { Request, Response, NextFunction } from "express";
 
-// Create a user-based rate limiter (e.g., 1000 requests per hour per user)
-const userRateLimiter = new RateLimiterMemory({
-    points: 1000, // Number of requests
-    duration: 60 * 60, // Per 1 hour
+// Basic IP-based rate limiter: 100 requests per 15 minutes per IP
+export const ipRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per 15 minutes
+    message: 'Too many requests from this IP, please try again after 15 minutes.',
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Specific Rate Limiter for login and registration
+export const loginRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 login requests per windowMs
+    message: 'Too many login attempts from this IP, please try again after 15 minutes.',
+    standardHeaders: true
+});
+
+export const registrationRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 registration requests per windowMs
+    message: 'Too many registration attempts from this IP, please try again after 15 minutes.',
+    standardHeaders: true
+});
+
+// Rate limiter for OAuth login (e.g., 5 attempts per 15 minutes)
+export const oauthLoginRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 login requests
+    message: 'Too many login attempts from this IP, please try again after 15 minutes.',
+});
+
+// Rate limiter for OAuth account linking (e.g., 10 attempts per 15 minutes)
+export const oauthLinkingRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 linking requests
+    message: 'Too many OAuth linking attempts from this IP, please try again after 15 minutes.',
 });
 
 // Define rate limits for different roles (requests per hour)

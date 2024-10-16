@@ -5,16 +5,17 @@ import passport from "../config/passport";
 import { generateToken, verifyToken } from "../utils/jwt";
 import { loginUser, registerUser } from "../controllers/authController";
 import { authenticateUser } from "../middlewares/authMiddleware";
+import { loginRateLimiter, registrationRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter } from "../middlewares/rateLimitMiddleware";
 
 dotenv.config();
 
 const router = Router();
 
 //JWT based User Login route
-router.post("/login", loginUser);
+router.post("/login", loginRateLimiter, loginUser);
 
 //JWT based User Registration route
-router.post("/register", registerUser);
+router.post("/register", registrationRateLimiter, registerUser);
 
 //OAuth authentication routes (works for both login and linking). Just add ?linking=true to the URL for linking.
 //Also, add token=yourtoken to the URL for linking, just after the ?linking=true&. The token will be used to check whether the user is authenticated to do so.
@@ -43,7 +44,7 @@ router.get("/:provider", (req, res, next) => {
             // Store the token in the state parameter for use in the callback
             console.log("Starting OAuth process for provider linking: ", provider, "token: ", token);
 
-            passport.authenticate(provider, { state: token })(req, res, next);
+            return oauthLinkingRateLimiter(req, res, () => passport.authenticate(provider)(req, res, next));
 
         } catch (error) {
             console.log("Error verifying token: ", error);
@@ -54,7 +55,7 @@ router.get("/:provider", (req, res, next) => {
     } else {
         console.log("Starting OAuth process for provider authentication: ", provider);
 
-        passport.authenticate(provider)(req, res, next);
+        return oauthLoginRateLimiter(req, res, () => passport.authenticate(provider)(req, res, next));
     }
     
 });
