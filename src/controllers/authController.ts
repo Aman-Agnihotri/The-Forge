@@ -1,7 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import e, { NextFunction, Request, Response } from "express";
 import { generateToken } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
 import { prisma } from "../config/prisma";
+import logger from "../services/logger";
 
 /**
  * Registers a new user and generates a JWT for them.
@@ -18,6 +19,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
     const { username, email, password, role_name } = req.body;
 
     if(!username || !email || !password){
+        logger.warn("User registration failed. All fields are required.");
         return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -25,6 +27,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         //Check if the user already exists
         const user = await prisma.users.findUnique({ where: { email } });
         if(user){
+            logger.warn(`User already exists with email ${email}.`);
             return res.status(409).json({ message: "User already exists with provided email address." });
         }
 
@@ -42,6 +45,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
             const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
             if (!role) {
+                logger.warn(`Role ${role_name} does not exist.`);
                 return res.status(400).json({ message: 'Role does not exist' });
             }
 
@@ -64,6 +68,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
                     }
                 });
             } else {
+                logger.warn(`Default role 'user' does not exist.`);
                 return res.status(400).json({ message: 'user role does not exist' });
             }
         }
@@ -74,13 +79,17 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         // Remove all fields from the user object except username and id before returning
         const filteredUserData = { id: newUser.id, username: newUser.username };
 
+        // Log the successful registration
+        logger.info(`User ${username} registered successfully with email ${email}.`);
+
+        // Return the JWT and the user object
         return res.status(201).json({ token, user: filteredUserData });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "An error occurred while registering the user.",
-        })
-}};
+        logger.error(error);
+        next(error);
+        return res.status(500).json({ message: "An error occurred while registering user." });
+    }
+};
 
 /**
  * Logs in an existing user and generates a JWT for them.
@@ -101,21 +110,25 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         const user = await prisma.users.findUnique({ where : { email } });
 
         if(!user){
+            logger.warn(`User not found with email ${email}.`);
             return res.status(401).json({ message: "User not found with provided email address." });
         }
 
         //Check if the user is soft deleted
         if(user.deletedAt){
+            logger.warn(`User ${email} is soft deleted.`);
             return res.status(401).json({ message: "User not found with provided email address." });
         }
 
         //Verify password by comparing the hashed password
         if (user.password === null) {
+            logger.warn(`A social login account with ${email} email address already exists.`);
             return res.status(401).json({ message: "A social login account with this email address already exists." });
         }
 
         const validPassword = await verifyPassword(user.password, password);
         if(!validPassword){
+            logger.warn(`Invalid password for user ${email}.`);
             return res.status(401).json({ message: "Invalid password." });
         }
 
@@ -125,9 +138,12 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         // Remove all fields from the user object except username and id before returning
         const filteredUserData = { id: user.id, username: user.username };
 
+        // Log the successful login
+        logger.info(`User ${user.username} logged in successfully with email ${email}.`);
         return res.status(200).json({ token, user: filteredUserData });
     } catch (error) {
-        console.error(error);
+        logger.error(error);
+        next(error);
         return res.status(500).json({ message: "An error occurred while logging in." });
     }
 };

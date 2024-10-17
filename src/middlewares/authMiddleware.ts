@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwt";
 import { prisma } from "../config/prisma";
+import logger from "../services/logger";
 
 /**
  * Middleware to verify JWT token and protect routes.
@@ -23,6 +24,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
             if (typeof decodedUser !== 'string' && 'id' in decodedUser) {
                 user_id = decodedUser.id;
             } else {
+                logger.warn("Invalid token payload: " + JSON.stringify(decodedUser));
                 return res.status(401).json({ message: 'Invalid token payload' });
             }
 
@@ -47,13 +49,14 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
             });
 
             if (!user) {
+                logger.warn("User with ID " + user_id + " not found: ");
                 return res.status(401).json({ message: 'User not found' });
             }
 
             (req as any).user = user;
             return next();
         } catch (error) {
-            console.error("Token verification error: " + error);
+            logger.error("Token verification error: " + error);
             return res.status(403).json({ message: "Invalid or expired authentication token" });
         }
     }
@@ -63,5 +66,6 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     //     return next(); // User is authenticated via OAuth, proceed to the next middleware
     // }
 
+    logger.warn("Unauthorized access: No authentication token provided");
     return res.status(401).json({ message: "Unauthorized, please log in" });
 };

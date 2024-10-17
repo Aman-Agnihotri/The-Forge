@@ -5,6 +5,7 @@ import { Strategy as FacebookStrategy } from "passport-facebook";
 import { Strategy as LinkedinStrategy } from "passport-linkedin-oauth2";
 import { prisma } from "./prisma";
 import { verifyToken } from "../utils/jwt";
+import logger from "../services/logger";
 
 const middle_api_auth_path = "/v1/auth";
 
@@ -34,6 +35,7 @@ const createStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin',
     const Strategy = strategies[provider];
 
     if (!Strategy) {
+        logger.error(`Unsupported strategy provider: ${provider}`);
         throw new Error(`Unsupported strategy provider: ${provider}`);
     }
 
@@ -46,6 +48,7 @@ const createStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin',
     } else if (provider === 'linkedin') {
         return new LinkedinStrategy(options, verify);
     } else {
+        logger.error(`Unsupported strategy provider: ${provider}`);
         throw new Error(`Unsupported strategy provider: ${provider}`);
     }
 }
@@ -72,6 +75,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
             throw new Error('Invalid or expired JWT token');
         }
     } catch (err) {
+        logger.warn('Invalid or expired JWT token received during provider linking');
         return done(JSON.stringify({
             message: 'Invalid or expired JWT token',
             status: 401
@@ -87,6 +91,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
     });
 
     if (existingProvider) {
+        logger.warn(`User ${loggedInUserId} tried to link an already linked provider: ${profile.provider}`);
         return done(JSON.stringify({
             message: 'This provider is already linked to your account',
             status: 409
@@ -99,6 +104,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
     });
     // Check if the OAuth account that the user is trying to link has the same email as the logged in user
     if (existingUserEmail && existingUserEmail.email !== profile.emails[0].value) {
+        logger.warn(`User ${loggedInUserId} tried to link a provider with a different email: ${profile.emails[0].value}`);
         return done(JSON.stringify({
             message: 'The OAuth account that you are trying to link has a different email than your account',
             status: 409
@@ -117,6 +123,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
             }
         }
     });
+    logger.warn(`User ${loggedInUserId} tried to link a provider with a different email: ${profile.emails[0].value}`);
     return done(null, updatedUser, token);
 }
 
@@ -139,11 +146,13 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
         // Check if this provider is already linked
         const existingProvider = existingUser.providers.find(provider => provider.providerName === profile.provider);
         if (!existingProvider) {
+            logger.warn(`Email conflict during OAuth authentication for email: ${email}`);
             return done(JSON.stringify({
                 message: 'An account with this email already exists',
                 status: 409
             }));
         }
+        logger.info(`OAuth login successful for user: ${existingUser.id}`);
         return done(null, existingUser); // Returning the existing user
     }
 
@@ -161,6 +170,7 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
         }
     });
 
+    logger.info(`New user created via OAuth with provider: ${profile.provider}, email: ${email}`);
     return done(null, newUser);
 }
 
@@ -172,6 +182,7 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
  */
 const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin') => {
     if (!process.env[`${provider.toUpperCase()}_CLIENT_ID`] || !process.env[`${provider.toUpperCase()}_CLIENT_SECRET`]) {
+        logger.error(`${provider.toUpperCase()}_CLIENT_ID or ${provider.toUpperCase()}_CLIENT_SECRET environment variable is not set`);
         throw new Error(`${provider.toUpperCase()}_CLIENT_ID or ${provider.toUpperCase()}_CLIENT_SECRET environment variable is not set`);
     }
 
@@ -190,7 +201,7 @@ const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linked
             async (request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any, info?: any) => void) => {
                 try {
 
-                    console.log(profile.provider.toUpperCase() + " profile: ", profile);
+                    logger.info(`Processing OAuth callback for provider: ${profile.provider}`);
 
                     // Check if we are linking the provider to an existing user (JWT provided in state)
                     const token = request.query.state as string;
@@ -202,6 +213,7 @@ const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linked
                     }
 
                 } catch (error) {
+                    logger.error(`Error during OAuth process for provider ${profile.provider}: ${(error as any).message}`);
                     return done(error);
                 }
             }
@@ -222,8 +234,10 @@ passport.deserializeUser( async (id: string, done) => {
     try {
         //Find user by id and deserialize the user from the session
         const user = await prisma.users.findUnique({ where: { id } })
+        logger.info(`Deserialized user: ${id}`);
         done(null, user);
     } catch (error) {
+        logger.error(`Error deserializing user: ${id} - ${(error as any).message}`);
         done(error, null);
     }
 });
