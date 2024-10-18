@@ -4,6 +4,8 @@ import { hashPassword, verifyPassword } from "../utils/passwordHash";
 import { prisma } from "../config/prisma";
 import logger from "../services/logger";
 
+const default_role_name = process.env.DEFAULT_ROLE ?? 'user';
+
 /**
  * Registers a new user and generates a JWT for them.
  *
@@ -59,7 +61,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
             }
         } else {
             // If no role_name is provided, assign the default role
-            const defaultRole = await prisma.roles.findUnique({ where: { name: 'user' } });
+            const defaultRole = await prisma.roles.findUnique({ where: { name: default_role_name } });
             if (defaultRole?.id) {
                 await prisma.user_role.create({
                     data: {
@@ -68,8 +70,9 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
                     }
                 });
             } else {
-                logger.warn(`Default role 'user' does not exist.`);
-                return res.status(400).json({ message: 'user role does not exist' });
+                logger.error(`Default role '${default_role_name}' does not exist.`);
+                next(new Error(`Default role '${default_role_name}' does not exist.`));
+                return res.status(500).json({ message: `Default role '${default_role_name}' does not exist.` });
             }
         }
 

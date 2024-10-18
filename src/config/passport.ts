@@ -9,6 +9,8 @@ import logger from "../services/logger";
 
 const middle_api_auth_path = "/v1/auth";
 
+const default_oauth_role = process.env.DEFAULT_ROLE ?? 'user';
+
 // Define provider scopes
 const providerScopes: Record<string, string[]> = {
     google: ['email', 'profile'],
@@ -156,6 +158,16 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
         return done(null, existingUser); // Returning the existing user
     }
 
+    // Check if default role exists
+    const defaultRole = await prisma.roles.findUnique({ where: { name: default_oauth_role } });
+    if (!defaultRole) {
+        logger.error('Default role `${default_oauth_role}` for OAuth not found');
+        return done(JSON.stringify({
+            message: 'Default role `${default_oauth_role}` for OAuth not found',
+            status: 500
+        }));
+    }
+
     // Create new user
     const newUser = await prisma.users.create({
         data: {
@@ -170,7 +182,15 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
         }
     });
 
-    logger.info(`New user created via OAuth with provider: ${profile.provider}, email: ${email}`);
+    // Assign default role to the new user
+    await prisma.user_role.create({
+        data: {
+            userId: newUser.id,
+            roleId: defaultRole.id
+        }
+    });
+
+    logger.info(`New user created via OAuth with provider: ${profile.provider}, email: ${email}, role: ${defaultRole.name}`);
     return done(null, newUser);
 }
 
@@ -184,9 +204,12 @@ const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linked
     if (!process.env[`${provider.toUpperCase()}_CLIENT_ID`] || !process.env[`${provider.toUpperCase()}_CLIENT_SECRET`]) {
         logger.error(`${provider.toUpperCase()}_CLIENT_ID or ${provider.toUpperCase()}_CLIENT_SECRET environment variable is not set`);
         throw new Error(`${provider.toUpperCase()}_CLIENT_ID or ${provider.toUpperCase()}_CLIENT_SECRET environment variable is not set`);
+    } else if (!process.env.HOST_API_URL) {
+        logger.error('HOST_API_URL environment variable is not set');
+        throw new Error('HOST_API_URL environment variable is not set');
     }
 
-    const baseCallbackURL = `${process.env.HOST_CALLBACK_URL}${middle_api_auth_path}/${provider}/callback`;
+    const baseCallbackURL = `${process.env.HOST_API_URL}${middle_api_auth_path}/${provider}/callback`;
 
     passport.use(provider,
         createStrategy(provider, {

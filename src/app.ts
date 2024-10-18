@@ -12,6 +12,8 @@ import { authenticateUser } from "./middlewares/authMiddleware";
 
 import logger from "./services/logger";
 
+import { setupSwagger } from "./config/swaggerConfig";
+
 dotenv.config();
 
 const app = express();
@@ -26,6 +28,8 @@ app.use("/v1/auth", authRoutes);
 app.use("/v1/api", useRateLimitMiddleware, authenticateUser, protectedRoutes);
 
 app.use(errorHandler);
+
+setupSwagger(app);
 
 app.get("/", (req, res) => {
     res.send("The Forge API is running. <a href='/auth/linkedin'>Login with Linkedin</a>");

@@ -3,6 +3,8 @@ import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
 
+const default_role_name = process.env.DEFAULT_ROLE ?? 'user';
+
 // Get all users (Admin only)
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -213,7 +215,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
             }
         } else {
             // If no role_name is provided, assign the default role
-            const defaultRole = await prisma.roles.findUnique({ where: { name: 'user' } });
+            const defaultRole = await prisma.roles.findUnique({ where: { name: default_role_name } });
 
             if (defaultRole?.id) {
                 await prisma.user_role.create({
@@ -223,8 +225,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
                     }
                 });
             } else {
-                logger.warn(`User creation failed. Default "user" role does not exist.`);
-                res.status(400).json({ message: 'default "user" role does not exist' });
+                logger.error(`User creation failed. Default '${default_role_name}' role does not exist.`);
+                next(new Error(`User creation failed. Default '${default_role_name}' role does not exist.`));
+                res.status(500).json({ message: 'default "${default_role_name}" role does not exist' });
                 return;
             }
         }
