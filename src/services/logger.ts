@@ -35,7 +35,7 @@ createLogDirectories();
 
 // Define a rotating stream for Pino
 const rotatingStream = createRotatingWriteStream({
-    filename: 'application-the-forge-%DATE%.log',
+    filename: 'server-%DATE%.log',
     path: pinoLogDir,
     interval: '1d', // Rotate logs daily
     maxFiles: 14, // Keep logs for 14 days
@@ -57,7 +57,7 @@ const timestampFormat = 'MMM-DD-YYYY HH:mm:ss';
 
 // Define a daily rotate transport for Winston
 const dailyRotateFileTransport = new DailyRotateFile({
-    filename: path.join(winstonLogDir, 'application-the-forge-%DATE%.log'),  // Log file name pattern
+    filename: path.join(winstonLogDir, 'server-combined-%DATE%.log'),  // Log file name pattern
     datePattern: 'YYYY-MM-DD',               // Rotate daily with date in file name
     zippedArchive: true,                     // Compress the rotated logs
     maxSize: '20m',                          // Maximum log file size before rotation (e.g., 20 megabytes)
@@ -66,7 +66,7 @@ const dailyRotateFileTransport = new DailyRotateFile({
 
 // Define an error file transport for Winston
 const errorFileTransport = new DailyRotateFile({
-    filename: path.join(winstonLogDir, 'application-the-forge-error-%DATE%.log'),
+    filename: path.join(winstonLogDir, 'server-error-%DATE%.log'),
     level: 'error',                          // Log only error messages in this file
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
