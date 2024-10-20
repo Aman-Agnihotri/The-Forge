@@ -9,11 +9,10 @@ While this project is a work in progress, its first release will lay the groundw
 ### 1. **Authentication & Authorization**
 - **JWT-Based Authentication**: Secure user authentication system using tokens.
 - **OAuth 2.0 Support**: Seamless integration with popular third-party providers like Google and GitHub.
-- **Role-Based Access Control (RBAC)**: Fine-tuned access control for users based on roles and permissions.
 
 ### 2. **User Management**
 - Basic CRUD operations for user data.
-- Role and permission management to secure different levels of access.
+- Role-Based Access Control (RBAC): Fine-tuned access control for users based on roles and permissions.
 
 ### 3. **Rate Limiting**
 - Prevent API abuse by limiting the number of requests a user can make in a given timeframe.
@@ -39,7 +38,7 @@ Stay tuned as The Forge continues to evolve with more powerful tools and integra
 - **Language**: TypeScript
 - **Database**: PostgreSQL using Prisma ORM
 - **Authentication**: JWT, OAuth 2.0 (Google, GitHub)
-- **Logging**: Winston
+- **Logging**: Winston and Pino (It's a choice. Both are implemented in the suite)
 - **API Documentation**: Swagger
 
 ## Installation & Setup ⚙️
@@ -48,7 +47,7 @@ To set up and run The Forge locally:
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/the-forge.git
+   git clone https://github.com/Aman-Agnihotri/the-forge.git
    cd the-forge
 
 2. **Install dependencies**:
@@ -59,7 +58,7 @@ To set up and run The Forge locally:
    - Create a `.env` file in the root directory and configure the necessary variables like JWT secret and OAuth credentials.
 
 4. **Initialize the database**:
-   - Set up the server of your choice by passing the relevant information in the `.env` file and run the database migrations using Prisma.
+   - Set up the server of your choice by passing the relevant information in the `.env` file and run the database migrations using Prisma. You can use the `.env.example` as a starting point for your `.env` file.
 
 5. **Run the development server**:
    ```bash
