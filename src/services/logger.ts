@@ -2,13 +2,11 @@ import pino from 'pino';
 import createRotatingWriteStream from 'pino-rotating-file-stream';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
-import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import { NODE_ENV, LOGGER, LOG_LEVEL } from '../utils/constants';
 
-dotenv.config();
-
-const usePino = process.env.LOGGER === 'pino'; // Set in your .env file
+const usePino = LOGGER === 'pino'; // Set in your .env file
 
 // Use process.cwd() to get the root directory of the project
 const rootLogDir = path.resolve(process.cwd(), 'logs');
@@ -44,7 +42,7 @@ const rotatingStream = createRotatingWriteStream({
 
 // Pino configuration
 const pinoLogger = pino({
-    level: process.env.LOG_LEVEL ?? 'info',
+    level: LOG_LEVEL ?? 'info',
     transport: {
         target: 'pino-pretty', // Pretty logs for development
         options: { colorize: true }
@@ -76,7 +74,7 @@ const errorFileTransport = new DailyRotateFile({
 
 // Winston configuration
 const winstonLogger = winston.createLogger({
-    level: process.env.LOG_LEVEL ?? 'info',
+    level: LOG_LEVEL ?? 'info',
     format: combine(
         timestamp({ format: timestampFormat }),
         json(), // Use JSON format by default
@@ -97,7 +95,7 @@ const winstonLogger = winston.createLogger({
 });
 
 // If we're not in production, show human-readable output in the console
-if (process.env.NODE_ENV !== 'production') {
+if (NODE_ENV !== 'production') {
     winstonLogger.add(new winston.transports.Console({
         format: winston.format.simple()
     }));

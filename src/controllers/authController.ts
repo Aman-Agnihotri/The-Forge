@@ -3,8 +3,7 @@ import { generateToken } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
 import { prisma } from "../config/prisma";
 import logger from "../services/logger";
-
-const default_role_name = process.env.DEFAULT_ROLE ?? 'user';
+import { DEFAULT_ROLE } from "../utils/constants";
 
 /**
  * Registers a new user and generates a JWT for them.
@@ -33,7 +32,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
             return res.status(409).json({ message: "User already exists with provided email address." });
         }
 
-        //Create a new user and hash the password using argon2
+        //Create a new user and hash the password
         const newUser = await prisma.users.create({
             data: {
                 username,
@@ -61,7 +60,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
             }
         } else {
             // If no role_name is provided, assign the default role
-            const defaultRole = await prisma.roles.findUnique({ where: { name: default_role_name } });
+            const defaultRole = await prisma.roles.findUnique({ where: { name: DEFAULT_ROLE } });
             if (defaultRole?.id) {
                 await prisma.user_role.create({
                     data: {
@@ -70,9 +69,9 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
                     }
                 });
             } else {
-                logger.error(`Default role '${default_role_name}' does not exist.`);
-                next(new Error(`Default role '${default_role_name}' does not exist.`));
-                return res.status(500).json({ message: `Default role '${default_role_name}' does not exist.` });
+                logger.error(`Default role '${DEFAULT_ROLE}' does not exist.`);
+                next(new Error(`Default role '${DEFAULT_ROLE}' does not exist.`));
+                return res.status(500).json({ message: `Default role '${DEFAULT_ROLE}' does not exist.` });
             }
         }
 

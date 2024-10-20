@@ -6,18 +6,9 @@ import { Strategy as LinkedinStrategy } from "passport-linkedin-oauth2";
 import { prisma } from "./prisma";
 import { verifyToken } from "../utils/jwt";
 import logger from "../services/logger";
+import { DEFAULT_ROLE, OAuthProvider, providerScopes, PROVIDERS } from "../utils/constants";
 
-const middle_api_auth_path = "/v1/auth";
-
-const default_oauth_role = process.env.DEFAULT_ROLE ?? 'user';
-
-// Define provider scopes
-const providerScopes: Record<string, string[]> = {
-    google: ['email', 'profile'],
-    github: ['user:email'],
-    facebook: ['email'],
-    linkedin: ['r_emailaddress', 'r_liteprofile']
-};
+import { getClientId, getClientSecret, getAuthCallbackURL } from "../utils/utils";
 
 /**
  * Creates an OAuth strategy for a given provider.
@@ -26,7 +17,7 @@ const providerScopes: Record<string, string[]> = {
  * @param {function} verify The verify function for the OAuth strategy.
  * @returns {OAuthStrategy} The OAuth strategy for the given provider.
  */
-const createStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin', options: any, verify: any) => {
+const createStrategy = (provider: OAuthProvider, options: any, verify: any) => {
     const strategies = {
         google: GoogleStrategy,
         github: GitHubStrategy,
@@ -159,11 +150,11 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
     }
 
     // Check if default role exists
-    const defaultRole = await prisma.roles.findUnique({ where: { name: default_oauth_role } });
+    const defaultRole = await prisma.roles.findUnique({ where: { name: DEFAULT_ROLE } });
     if (!defaultRole) {
-        logger.error('Default role `${default_oauth_role}` for OAuth not found');
+        logger.error('Default role `${DEFAULT_ROLE}` for OAuth not found');
         return done(JSON.stringify({
-            message: 'Default role `${default_oauth_role}` for OAuth not found',
+            message: 'Default role `${DEFAULT_ROLE}` for OAuth not found',
             status: 500
         }));
     }
@@ -200,22 +191,15 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
  * @param {string} provider - The provider to set up (e.g. 'google', 'github', 'facebook', 'linkedin')
  * @throws {Error} If the provider's client ID or secret is not set in the environment variables
  */
-const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linkedin') => {
-    if (!process.env[`${provider.toUpperCase()}_CLIENT_ID`] || !process.env[`${provider.toUpperCase()}_CLIENT_SECRET`]) {
-        logger.error(`${provider.toUpperCase()}_CLIENT_ID or ${provider.toUpperCase()}_CLIENT_SECRET environment variable is not set`);
-        throw new Error(`${provider.toUpperCase()}_CLIENT_ID or ${provider.toUpperCase()}_CLIENT_SECRET environment variable is not set`);
-    } else if (!process.env.HOST_API_URL) {
-        logger.error('HOST_API_URL environment variable is not set');
-        throw new Error('HOST_API_URL environment variable is not set');
-    }
+const setupOAuthStrategy = (provider: OAuthProvider) => {
 
-    const baseCallbackURL = `${process.env.HOST_API_URL}${middle_api_auth_path}/${provider}/callback`;
+    const CallbackURL = getAuthCallbackURL(provider);
 
     passport.use(provider,
         createStrategy(provider, {
-            clientID: process.env[`${provider.toUpperCase()}_CLIENT_ID`],
-            clientSecret: process.env[`${provider.toUpperCase()}_CLIENT_SECRET`],
-            callbackURL: baseCallbackURL,
+            clientID: getClientId(provider),
+            clientSecret: getClientSecret(provider),
+            callbackURL: CallbackURL,
             passReqToCallback: true,
             enableProof: true,                              //For Facebook exclusively
             scope: providerScopes[provider],
@@ -244,10 +228,10 @@ const setupOAuthStrategy = (provider: 'google' | 'github' | 'facebook' | 'linked
     )
 }
 
-setupOAuthStrategy('google');
-setupOAuthStrategy('github');
-setupOAuthStrategy('facebook');
-setupOAuthStrategy('linkedin');
+// Setup OAuth strategies for all providers
+for (const provider of PROVIDERS) {
+    setupOAuthStrategy(provider as OAuthProvider);
+}
 
 passport.serializeUser((user: any, done) => {
     done(null, user.id); // Serialize the user ID into the session

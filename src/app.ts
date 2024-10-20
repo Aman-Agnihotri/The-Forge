@@ -1,5 +1,4 @@
 import express from "express";
-import dotenv from "dotenv";
 import helmet from "helmet";
 import cors from "cors";
 
@@ -12,9 +11,9 @@ import { authenticateUser } from "./middlewares/authMiddleware";
 
 import logger from "./services/logger";
 
-import { setupSwagger } from "./config/swaggerConfig";
+import { PORT, API_PATH } from "./utils/constants";
 
-dotenv.config();
+import { setupSwagger } from "./config/swaggerConfig";
 
 const app = express();
 app.use(express.json());
@@ -24,21 +23,19 @@ app.use(cors());
 
 app.use(ipRateLimiter);
 
-app.use("/v1/auth", authRoutes);
-app.use("/v1/api", useRateLimitMiddleware, authenticateUser, protectedRoutes);
+app.use(API_PATH + "/auth", authRoutes);
+app.use(API_PATH + "/api", authenticateUser, useRateLimitMiddleware, protectedRoutes);
 
 app.use(errorHandler);
 
 setupSwagger(app);
 
 app.get("/", (req, res) => {
-    res.send("The Forge API is running. <a href='/auth/linkedin'>Login with Linkedin</a>");
+    res.send("The Forge API is running. <a href='" + API_PATH + "/auth/linkedin'>Login with Linkedin</a>");
 });
 
-const port = process.env.PORT ?? 3000;
-
-app.listen(port, () => {
-    logger.info(`The Forge API is running on port ${port}.`);
+app.listen(PORT, () => {
+    logger.info(`The Forge API is running on port ${PORT}.`);
 });
 
 process.on('SIGINT', () => {

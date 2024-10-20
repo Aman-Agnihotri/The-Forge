@@ -1,16 +1,12 @@
 import { Router } from "express";
-import dotenv from "dotenv";
 import { prisma } from "../config/prisma";
 import passport from "../config/passport";
+import { PROVIDERS, HOST_UI_URL } from "../utils/constants";
 import { generateToken, verifyToken } from "../utils/jwt";
 import { loginUser, registerUser } from "../controllers/authController";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import logger from "../services/logger";
 import { loginRateLimiter, registrationRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter } from "../middlewares/rateLimitMiddleware";
-
-dotenv.config();
-
-const providers = ['google', 'github', 'facebook', 'linkedin'];
 
 const router = Router();
 
@@ -31,7 +27,7 @@ router.post("/register", registrationRateLimiter, (req, res, next) => {
 router.get("/:provider", (req, res, next) => {
     const provider = req.params.provider;
 
-    if (!providers.includes(provider)) {
+    if (!PROVIDERS.includes(provider)) {
         logger.warn(`Invalid provider provided for authentication in request: ${provider}`);
         res.status(400).json({ message: 'Invalid provider' });
         return;
@@ -82,10 +78,11 @@ router.get("/:provider/callback", (req, res, next) => {
         if(err){
             try {
                 const error = JSON.parse(err);
-                logger.error(`Error message: ${error["message"]}, Error status: ${error["status"]}`);
+                logger.warn(`Error message: ${error["message"]}\nError status: ${error["status"]}`);
                 return res.status(error.status).send(error.message);
             } catch (e) {
                 logger.error(`Error in parsing error message: ${e}`);
+                next(e);
                 return res.status(500).send("Internal Server Error");
             }
         } else if(user && 'id' in user) {
@@ -101,7 +98,7 @@ router.get("/:provider/callback", (req, res, next) => {
             }
             
             // Ensure to sanitize user info before including in the redirect
-            return res.redirect(`${process.env.FRONTEND_URL}?token=${token}&user=${JSON.stringify({ id: user.id, username: user.username })}`); // Redirect with token and user id
+            return res.redirect(`${HOST_UI_URL}?token=${token}&user=${JSON.stringify({ id: user.id, username: user.username })}`); // Redirect with token and user id
         } else {
             logger.warn('User information is missing');
             return res.status(400).send('User information is missing');
@@ -113,7 +110,7 @@ router.get("/:provider/callback", (req, res, next) => {
 router.delete("/unlink/:provider", authenticateUser, async (req, res) => {
     const provider = req.params.provider;
 
-    if (!providers.includes(provider)) {
+    if (!PROVIDERS.includes(provider)) {
         logger.warn(`Invalid provider provided for unlinking in request: ${provider}`);
         res.status(400).json({ message: 'Invalid provider' });
         return;

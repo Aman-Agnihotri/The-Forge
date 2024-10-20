@@ -1,9 +1,8 @@
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { Express } from 'express';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import logger from '../services/logger';
+import { HOST_API_URL, NODE_ENV } from '../utils/constants';
 
 // Basic configuration for Swagger
 const swaggerOptions = {
@@ -16,10 +15,20 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: process.env.HOST_API_URL ?? 'http://localhost:5000', // Change this to your API's base URL
-                description: 'Development server',
+                url: HOST_API_URL,
+                description: NODE_ENV + ' server',
             },
         ],
+        components: {
+            securitySchemes: {
+                BearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                },
+            },
+        },
+        security: [{ BearerAuth: [] }],
     },
     apis: ['./src/routes/*.ts', './src/controllers/*.ts'], // Paths to the files containing the API routes and controllers
 };
@@ -32,5 +41,5 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
  */
 export const setupSwagger = (app: Express) => {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-    console.log('Swagger documentation available at /api-docs');
+    logger.info('Swagger documentation available at /api-docs');
 };

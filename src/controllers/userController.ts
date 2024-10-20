@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
-
-const default_role_name = process.env.DEFAULT_ROLE ?? 'user';
+import { DEFAULT_ROLE } from '../utils/constants';
 
 // Get all users (Admin only)
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -99,12 +98,12 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User with user ID $(id) not found. The user may be soft-deleted.`)
+            logger.warn(`User with user ID ${id} not found. The user may be soft-deleted.`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
 
-        logger.info(`User $(user.username) fetched successfully`)
+        logger.info(`User '${user.username}' fetched successfully`)
         res.json(user);
         return;
     } catch (error) {
@@ -142,12 +141,12 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
         });
 
         if (!user) {
-            logger.warn(`User with user ID $(id) not found`)
+            logger.warn(`User with user ID ${id} not found`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
 
-        logger.info(`User $(user.username) fetched successfully`)
+        logger.info(`User ${user.username} fetched successfully`)
         res.json(user);
         return;
     } catch (error) {
@@ -215,7 +214,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
             }
         } else {
             // If no role_name is provided, assign the default role
-            const defaultRole = await prisma.roles.findUnique({ where: { name: default_role_name } });
+            const defaultRole = await prisma.roles.findUnique({ where: { name: DEFAULT_ROLE } });
 
             if (defaultRole?.id) {
                 await prisma.user_role.create({
@@ -225,14 +224,14 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
                     }
                 });
             } else {
-                logger.error(`User creation failed. Default '${default_role_name}' role does not exist.`);
-                next(new Error(`User creation failed. Default '${default_role_name}' role does not exist.`));
-                res.status(500).json({ message: 'default "${default_role_name}" role does not exist' });
+                logger.error(`User creation failed. Default '${DEFAULT_ROLE}' role does not exist.`);
+                next(new Error(`User creation failed. Default '${DEFAULT_ROLE}' role does not exist.`));
+                res.status(500).json({ message: 'default "${DEFAULT_ROLE}" role does not exist' });
                 return;
             }
         }
 
-        logger.info(`User $(newUser.username) created successfully`)
+        logger.info(`User ${newUser.username} created successfully`)
         res.status(201).json(newUser);
         return;
     } catch (error) {
@@ -335,13 +334,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        logger.info(`User $(updatedUser.username) updated successfully`)
+        logger.info(`User ${updatedUser.username} updated successfully`)
         res.json(updatedUser);
         return;
     } catch (error) {
         if ((error as any).code === 'P2025') {
             // Record not found
-            logger.warn(`User update failed. User with id $(id) not found.`);
+            logger.warn(`User update failed. User with id ${id} not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else {
@@ -368,7 +367,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         return;
     } catch (error) {
         if ((error as any).code === 'P2025') {
-            logger.warn(`User delete failed. User with id $(id) not found.`);
+            logger.warn(`User delete failed. User with id ${id} not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else {
@@ -390,11 +389,11 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User restore failed. User with id $(id) not found.`);
+            logger.warn(`User restore failed. User with id ${id} not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else if (!user.deletedAt) {
-            logger.warn(`User restore failed. User with id $(id) is not soft-deleted.`);
+            logger.warn(`User restore failed. User with id ${id} is not soft-deleted.`);
             res.status(400).json({ message: 'User is not soft-deleted' });
             return;
         }
@@ -426,7 +425,7 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
         });
 
         if (!user) {
-            logger.warn(`User permanent deletion failed. User with id $(id) not found.`);
+            logger.warn(`User permanent deletion failed. User with id ${id} not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         }
