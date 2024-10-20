@@ -28,7 +28,6 @@ const swaggerOptions = {
                 },
             },
         },
-        security: [{ BearerAuth: [] }],
     },
     apis: ['./src/routes/*.ts'], // Paths to the files containing the API routes
 };
@@ -40,6 +39,6 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
  * @param {Express} app The Express.js app to add the Swagger UI to.
  */
 export const setupSwagger = (app: Express) => {
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, { swaggerOptions: { persistAuthorization: true } }));
     logger.info('Swagger documentation available at /api-docs');
 };

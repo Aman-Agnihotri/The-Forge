@@ -27,6 +27,8 @@ router.use((req, res, next) => {
  *   get:
  *     summary: Get all users (Admin only).
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: A list of all users.
@@ -82,6 +84,8 @@ router.get('/', authorizeRoles(['admin']), (req, res, next) => {
  *   get:
  *     summary: Get all users, including soft deleted (Admin only).
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     responses:
  *       200:
  *         description: A list of all users, including soft deleted.
@@ -139,6 +143,8 @@ router.get('/all', authorizeRoles(['admin']), (req, res, next) => {
  *   get:
  *     summary: Get a user by ID.
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -193,6 +199,8 @@ router.get('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
  *   get:
  *     summary: Get a user by ID, including soft deleted users (Admin only).
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -257,6 +265,8 @@ router.get('/all/:id/', authorizeRoles(['admin']), (req, res, next) => {
  *   post:
  *     summary: Create a new user (Admin only).
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -318,6 +328,8 @@ router.post('/', authorizeRoles(['admin']), (req, res, next) => {
  *   put:
  *     summary: Update a user.
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -384,6 +396,8 @@ router.put('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
  *   delete:
  *     summary: Soft delete a user (Admin only).
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -412,6 +426,8 @@ router.delete('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *   put:
  *     summary: Restore a soft-deleted user (Admin only).
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -447,6 +463,8 @@ router.put('/restore/:id', authorizeRoles(['admin']), (req, res, next) => {
  *   delete:
  *     summary: Permanently delete a user (Admin only).
  *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id

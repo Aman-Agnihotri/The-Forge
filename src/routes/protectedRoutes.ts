@@ -16,21 +16,54 @@ router.use((req, res, next) => {
 router.use("/users", userRoutes);
 router.use("/roles", roleRoutes);
 
-// A protected route that requires authentication
-router.get("/", async (req: any, res: any) => {
+/**
+ * @swagger
+ * /api/:
+ *   get:
+ *     summary: Access a protected route.
+ *     description: Access a protected route that requires authentication.
+ *     tags: [Protected]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully accessed the protected route.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized access.
+ *       500:
+ *         description: Internal server error.
+ */
+router.get("/", async (req: any, res: any, next: any) => {
     try {
         // Access the user object attached in the middleware
         const user = req.user;
 
         const userinfo = await prisma.users.findUnique({ where: { id: user.id } });
 
-        logger.info(`User ${userinfo?.username} accessed the protected route`);
-        res.json({
-            message: `Welcome to the secret club, ${userinfo?.username}!`,
-            user
-        });
+        if (!userinfo) {
+            logger.warn(`Use not found with id ${user.id}`);
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+
+        logger.info(`User ${userinfo.username} accessed the protected route`);
+        res.json({ message: `Welcome to the secret club, ${userinfo.username}!`, user });
     } catch (error) {
         logger.error(`Error accessing protected route: ${(error as any).message}`);
+        next(error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });

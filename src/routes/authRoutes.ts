@@ -272,7 +272,7 @@ router.get("/:provider/callback", (req, res, next) => {
  *     description: Unlinks a connected OAuth provider from the user's account.
  *     tags: [OAuth]
  *     security:
- *       - bearerAuth: []
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: provider
