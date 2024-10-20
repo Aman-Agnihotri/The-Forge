@@ -11,7 +11,7 @@ const swaggerOptions = {
         info: {
             title: 'The Forge API Documentation',
             version: '1.0.0',
-            description: 'Comprehensive API documentation for The Forge API suite',
+            description: 'API documentation for The Forge API suite',
         },
         servers: [
             {
@@ -30,7 +30,7 @@ const swaggerOptions = {
         },
         security: [{ BearerAuth: [] }],
     },
-    apis: ['./src/routes/*.ts', './src/controllers/*.ts'], // Paths to the files containing the API routes and controllers
+    apis: ['./src/routes/*.ts'], // Paths to the files containing the API routes
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);

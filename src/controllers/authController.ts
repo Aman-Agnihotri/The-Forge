@@ -1,4 +1,4 @@
-import e, { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { generateToken } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
 import { prisma } from "../config/prisma";
@@ -6,7 +6,7 @@ import logger from "../services/logger";
 import { DEFAULT_ROLE } from "../utils/constants";
 
 /**
- * Registers a new user and generates a JWT for them.
+ * Register a new user.
  *
  * @param {Request} req - The request object
  * @param {Response} res - The response object
@@ -14,7 +14,9 @@ import { DEFAULT_ROLE } from "../utils/constants";
  *
  * @returns {Promise<any>} A promise that resolves with the JWT and the user object.
  *
- * @throws {HttpError} If the user already exists, or if an error occurs while registering the user.
+ * @throws {400} - The request body is invalid
+ * @throws {409} - A user with the same email already exists
+ * @throws {500} - An error occurred while registering user
  */
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { username, email, password, role_name } = req.body;
@@ -102,7 +104,9 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
  *
  * @returns {Promise<any>} A promise that resolves with the JWT and the user object.
  *
- * @throws {HttpError} If the user does not exist, or if an error occurs while logging in.
+ * @throws {400} - The request body is invalid
+ * @throws {401} - The user is not found, or the password is invalid
+ * @throws {500} - An error occurred while logging in
  */
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { email, password } = req.body;

@@ -2,7 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import logger from '../services/logger';
 
-// Get all roles
+/**
+ * Retrieves all roles with their associated users.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * 
+ * @throws {500} - If there is an error while retrieving the roles
+ */
 export const getAllRoles = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const roles = await prisma.roles.findMany({
@@ -32,7 +40,16 @@ export const getAllRoles = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-// Get role by ID
+/**
+ * Retrieves a role by its ID.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * 
+ * @throws {404} - If the role is not found
+ * @throws {500} - If there is an error while retrieving the role
+ */
 export const getRoleById = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
@@ -70,7 +87,18 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
     }
 }
 
-// Create a new role
+/**
+ * Create a new role.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * @returns {Promise<any>} - The created role information
+ * 
+ * @throws {400} - If the role name is not provided in the request body
+ * @throws {400} - If the role name already exists
+ * @throws {500} - If an error occurs while creating the role
+ */
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
     const { name } = req.body;
 
@@ -110,7 +138,18 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     }
 };
 
-// Update a role
+/**
+ * Updates a role by its ID.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * @returns {Promise<any>} - The updated role information
+ * 
+ * @throws {400} - If the role name is not provided in the request body
+ * @throws {404} - If the role with the provided ID does not exist
+ * @throws {500} - If an error occurs while updating the role
+ */
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { name } = req.body;
@@ -159,7 +198,16 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     }
 }
 
-// Delete a role
+/**
+ * Deletes a role by its ID.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * 
+ * @throws {404} - If the role is not found
+ * @throws {500} - If there is an error while deleting the role
+ */
 export const deleteRole = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 

@@ -193,10 +193,27 @@ for (const provider of PROVIDERS) {
     setupOAuthStrategy(provider as OAuthProvider);
 }
 
+
+/**
+ * Serializes the user ID into the session.
+ *
+ * This function is called during login to store the user ID in the session cookie.
+ *
+ * @param {object} user - The authenticated user object
+ * @param {function} done - Callback to pass control to the next middleware
+ */
 passport.serializeUser((user: any, done) => {
     done(null, user.id); // Serialize the user ID into the session
 });
 
+/**
+ * Deserializes the user from the session.
+ *
+ * This function retrieves the user by their ID from the session cookie, allowing session persistence.
+ *
+ * @param {string} id - The ID of the user stored in the session
+ * @param {function} done - Callback to pass control to the next middleware
+ */
 passport.deserializeUser( async (id: string, done) => {
     try {
         //Find user by id and deserialize the user from the session

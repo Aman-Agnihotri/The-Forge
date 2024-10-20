@@ -4,7 +4,17 @@ import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
 import { DEFAULT_ROLE } from '../utils/constants';
 
-// Get all users (Admin only)
+/**
+ * Retrieves all non-deleted users and their associated roles and providers.
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ *
+ * @returns {Promise<any>} - The response to the request
+ *
+ * @throws {500} - If there is an error while retrieving the users
+ */
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const users = await prisma.users.findMany({
@@ -13,7 +23,8 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
                 id: true, 
                 username: true, 
                 email: true, 
-                createdAt: true, 
+                createdAt: true,
+                updatedAt: true,
                 roles: {
                     select: {
                         role: true
@@ -38,7 +49,17 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-// Get all users, including soft deleted (Admin only)
+/**
+ * Retrieves all users, including soft deleted users.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * 
+ * @returns {Promise<any>} - The response to the request
+ * 
+ * @throws {500} - If there is an error while retrieving the users
+ */
 export const getAllUsersIncludingDeleted = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const users = await prisma.users.findMany({
@@ -47,6 +68,7 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
                 username: true,
                 email: true,
                 createdAt: true,
+                updatedAt: true,
                 deletedAt: true,  // Include deletedAt field to differentiate active and soft-deleted users
                 roles: {
                     select: {
@@ -72,7 +94,18 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
     }
 };
 
-// Get a user by ID
+/**
+ * Retrieves a user by its ID.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * 
+ * @returns {Promise<any>} - The response to the request
+ * 
+ * @throws {404} - If the user is not found
+ * @throws {500} - If there is an error while retrieving the user
+ */
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
@@ -82,16 +115,18 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
                 id: true,
                 username: true,
                 email: true,
-                createdAt: true,
                 roles: {
                     select: {
-                        role: true
+                        role: {
+                            select: {
+                                name: true
+                            }
+                        }
                     }
                 },
                 providers: {
                     select: {
                         providerName: true,
-                        providerId: true
                     }
                 }
             }
@@ -114,7 +149,16 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-// Get a user by ID, including soft deleted users (Admin only)
+/**
+ * Retrieves a user by their ID. This includes soft-deleted users.
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * 
+ * @throws {404} - If the user is not found
+ * @throws {500} - If there is an error while retrieving the user
+ */
 export const getUserByIdIncludingDeleted = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     try {
@@ -125,6 +169,7 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
                 username: true,
                 email: true,
                 createdAt: true,
+                updatedAt: true,
                 deletedAt: true,
                 roles: {
                     select: {
@@ -157,7 +202,17 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
     }
 };
 
-// Create a new user (Admin only)
+/**
+ * Create a new user.
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * @returns {Promise<any>} - The created user information
+ *
+ * @throws {400} - If the request body is invalid
+ * @throws {500} - If an error occurs while creating the user
+ */
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
     const { email, username, password, role_name } = req.body;
 
@@ -189,8 +244,12 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
             select: {
                 id: true, 
                 username: true, 
-                email: true, 
-                createdAt: true, 
+                email: true,
+                roles: {
+                    select: {
+                        role: true
+                    }
+                }
             }
         });
 
@@ -212,6 +271,10 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
                     }
                 });
             }
+
+            // Append the role to the newUser object
+            newUser.roles = [{ role: role }];
+
         } else {
             // If no role_name is provided, assign the default role
             const defaultRole = await prisma.roles.findUnique({ where: { name: DEFAULT_ROLE } });
@@ -229,6 +292,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
                 res.status(500).json({ message: 'default "${DEFAULT_ROLE}" role does not exist' });
                 return;
             }
+
+            // Append the default role to the newUser object
+            newUser.roles = [{ role: defaultRole }];
         }
 
         logger.info(`User ${newUser.username} created successfully`)
@@ -249,7 +315,19 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     }
 };
 
-// Update a user
+/**
+ * Updates a user by its ID. Only the requesting user can update their own data. Admins can update any user.
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * @returns {Promise<void>} - The response to the request
+ *
+ * @throws {400} - If at least one field is not provided in the request body
+ * @throws {403} - If the requesting user is not an admin and is trying to update a user other than themselves
+ * @throws {404} - If the user with the provided ID does not exist
+ * @throws {500} - If an error occurs while updating the user
+ */
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const id_of_user_to_update = id;
@@ -330,7 +408,15 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
                 id: true,
                 username: true,
                 email: true,
-                updatedAt: true
+                roles: {
+                    select: {
+                        role: {
+                            select: {
+                                name: true
+                            }
+                        }
+                    }
+                },
             }
         });
 
@@ -352,11 +438,36 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     }
 };
 
-// Soft Delete a User (Admin Only)
+/**
+ * Soft delete a user by setting the deletedAt timestamp to the current time.
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ *
+ * @throws {400} - If the user is already deleted
+ * @throws {404} - If the user is not found
+ * @throws {500} - If there is an error while deleting the user
+ */
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
+
+        const user = await prisma.users.findUnique({
+            where: { id }
+        });
+
+        if (!user) {
+            logger.warn(`User delete failed. User with id ${id} not found.`);
+            res.status(404).json({ message: 'User not found' });
+            return;
+        } else if (user.deletedAt) {
+            logger.warn(`User delete failed. User with id ${id} is already deleted.`);
+            res.status(400).json({ message: 'User is already deleted' });
+            return;
+        }
+
         await prisma.users.update({
             where: { id },
             data: { deletedAt: new Date() } // Mark user as deleted by setting the timestamp
@@ -366,26 +477,30 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         res.json({ message: 'User deleted successfully' });
         return;
     } catch (error) {
-        if ((error as any).code === 'P2025') {
-            logger.warn(`User delete failed. User with id ${id} not found.`);
-            res.status(404).json({ message: 'User not found' });
-            return;
-        } else {
-            logger.error(error);
-            res.status(500).json({ message: 'Encountered some error while deleting user' });
-            return;
-        }
+        logger.error(error);
+        res.status(500).json({ message: 'Encountered some error while deleting user' });
+        return;
     }
 };
 
-// Restore a soft-deleted user (Admin only)
+/**
+ * Restore a soft-deleted user (Admin only).
+ * 
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ * 
+ * @throws {400} - If the user is not soft-deleted
+ * @throws {404} - If the user is not found
+ * @throws {500} - If there is an error while restoring the user
+ */
 export const restoreUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
         // Ensure the user is currently soft-deleted
         const user = await prisma.users.findUnique({
-            where: { id, deletedAt: { not: null } }
+            where: { id }
         });
 
         if (!user) {
@@ -415,7 +530,16 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-// Permanently delete a user (Admin only)
+/**
+ * Permanently delete a user by its ID. This will delete all associated records (e.g. user roles, providers).
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ *
+ * @throws {404} - If the user is not found
+ * @throws {500} - If there is an error while permanently deleting the user
+ */
 export const permanentlyDeleteUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 

@@ -10,13 +10,113 @@ import { loginRateLimiter, registrationRateLimiter, oauthLinkingRateLimiter, oau
 
 const router = Router();
 
-//JWT based User Login route
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Log in a user with JWT-based authentication.
+ *     description: Authenticates a user using their credentials and returns a JWT token.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       description: User credentials (email, password) for login.
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successfully logged in the user.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *       401:
+ *         description: Invalid credentials.
+ *       429:
+ *         description: Too many login attempts (rate-limited).
+ *       500:
+ *         description: Internal server error.
+ */
+
 router.post("/login", loginRateLimiter, (req, res, next) => {
     logger.info("Login attempt");
     loginUser(req, res, next);
 });
 
-//JWT based User Registration route
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Register a new user.
+ *     description: Creates a new user account with the provided information and returns a JWT token.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       description: User registration data.
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - email
+ *               - password
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role_name:
+ *                 type: string
+ *                 description: Optional role name to assign to the user.
+ *     responses:
+ *       201:
+ *         description: User successfully registered.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *       400:
+ *         description: Missing required fields.
+ *       409:
+ *         description: User already exists.
+ *       429:
+ *         description: Too many registration attempts (rate-limited).
+ *       500:
+ *         description: Internal server error.
+ */
+
 router.post("/register", registrationRateLimiter, (req, res, next) => {
     logger.info("Registration attempt");
     registerUser(req, res, next);
@@ -24,6 +124,42 @@ router.post("/register", registrationRateLimiter, (req, res, next) => {
 
 //OAuth authentication routes (works for both login and linking). Just add ?linking=true to the URL for linking.
 //Also, add token=yourtoken to the URL for linking, just after the ?linking=true&. The token will be used to check whether the user is authenticated to do so.
+
+/**
+ * @swagger
+ * /auth/{provider}:
+ *   get:
+ *     summary: Initiate OAuth login or provider linking.
+ *     description: Starts the OAuth process for logging in or linking a provider to an existing account.
+ *     tags: [OAuth]
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         description: OAuth provider (e.g., google, github).
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: linking
+ *         description: Specify if the OAuth provider is being linked to an existing account.
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: token
+ *         description: JWT token used for linking the OAuth provider to an existing account.
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: OAuth process initiated.
+ *       400:
+ *         description: Invalid provider.
+ *       401:
+ *         description: Invalid or expired JWT token.
+ *       429:
+ *         description: Too many OAuth requests (rate-limited).
+ */
+
 router.get("/:provider", (req, res, next) => {
     const provider = req.params.provider;
 
@@ -70,7 +206,29 @@ router.get("/:provider", (req, res, next) => {
     
 });
 
-//OAuth callback routes
+/**
+ * @swagger
+ * /auth/{provider}/callback:
+ *   get:
+ *     summary: Handle the OAuth provider callback.
+ *     description: Processes the callback from the OAuth provider after authentication.
+ *     tags: [OAuth]
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         description: OAuth provider (e.g., google, github).
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Successfully authenticated, redirects with a JWT token.
+ *       400:
+ *         description: User information is missing.
+ *       500:
+ *         description: Internal server error during OAuth callback.
+ */
+
 router.get("/:provider/callback", (req, res, next) => {
     const provider = req.params.provider;
 
@@ -106,7 +264,33 @@ router.get("/:provider/callback", (req, res, next) => {
     })(req, res, next);
 });
 
-//OAuth unlink route
+/**
+ * @swagger
+ * /auth/unlink/{provider}:
+ *   delete:
+ *     summary: Unlink an OAuth provider from the user's account.
+ *     description: Unlinks a connected OAuth provider from the user's account.
+ *     tags: [OAuth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: provider
+ *         required: true
+ *         description: OAuth provider to unlink (e.g., google, github).
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Provider successfully unlinked.
+ *       400:
+ *         description: Cannot unlink the last provider.
+ *       404:
+ *         description: No linked provider found.
+ *       500:
+ *         description: An error occurred while unlinking the provider.
+ */
+
 router.delete("/unlink/:provider", authenticateUser, async (req, res) => {
     const provider = req.params.provider;
 
