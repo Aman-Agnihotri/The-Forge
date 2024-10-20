@@ -1,3 +1,8 @@
+import { Strategy as GoogleStrategy } from "passport-google-oauth2";
+import { Strategy as GithubStrategy } from "passport-github2";
+import { Strategy as FacebookStrategy } from "passport-facebook";
+import { Strategy as LinkedinStrategy } from "passport-linkedin-oauth2";
+
 import { 
     HOST_API_URL,
     OAuthProvider,
@@ -49,4 +54,33 @@ export function getClientSecret(provider: OAuthProvider) {
  */
 export function getAuthCallbackURL(provider: OAuthProvider) {
     return `${HOST_API_URL}/auth/${provider}/callback`;
+}
+
+type StrategyConstructor = new (options: any, verify: any) => any;
+
+const strategies: Record<string, StrategyConstructor> = {
+    GoogleStrategy,
+    GithubStrategy,
+    FacebookStrategy,
+    LinkedinStrategy,
+};
+
+/**
+ * Creates an OAuth strategy for a given provider.
+ * @param {string} provider The provider of the OAuth strategy.
+ * @param {object} options The options for the OAuth strategy.
+ * @param {function} verify The verify function for the OAuth strategy.
+ * @returns {OAuthStrategy} The OAuth strategy for the given provider.
+ */
+export const createStrategy = (provider: OAuthProvider, options: any, verify: any) => {
+    const strategyName = `${provider.charAt(0).toUpperCase()}${provider.slice(1)}Strategy`;
+    
+    const Strategy = strategies[strategyName];
+
+    if (!Strategy) {
+        logger.error(`Unsupported strategy provider: ${provider}`);
+        throw new Error(`Unsupported strategy provider: ${provider}`);
+    }
+
+    return new Strategy(options, verify);
 }

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../config/prisma";
-import passport from "../config/passport";
+import passport from "../controllers/passportController";
 import { PROVIDERS, HOST_UI_URL } from "../utils/constants";
 import { generateToken, verifyToken } from "../utils/jwt";
 import { loginUser, registerUser } from "../controllers/authController";

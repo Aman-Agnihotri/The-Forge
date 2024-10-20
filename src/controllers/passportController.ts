@@ -1,50 +1,10 @@
 import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth2";
-import { Strategy as GitHubStrategy } from "passport-github2";
-import { Strategy as FacebookStrategy } from "passport-facebook";
-import { Strategy as LinkedinStrategy } from "passport-linkedin-oauth2";
-import { prisma } from "./prisma";
+import { prisma } from "../config/prisma";
 import { verifyToken } from "../utils/jwt";
 import logger from "../services/logger";
 import { DEFAULT_ROLE, OAuthProvider, providerScopes, PROVIDERS } from "../utils/constants";
 
-import { getClientId, getClientSecret, getAuthCallbackURL } from "../utils/utils";
-
-/**
- * Creates an OAuth strategy for a given provider.
- * @param {string} provider The provider of the OAuth strategy.
- * @param {object} options The options for the OAuth strategy.
- * @param {function} verify The verify function for the OAuth strategy.
- * @returns {OAuthStrategy} The OAuth strategy for the given provider.
- */
-const createStrategy = (provider: OAuthProvider, options: any, verify: any) => {
-    const strategies = {
-        google: GoogleStrategy,
-        github: GitHubStrategy,
-        facebook: FacebookStrategy,
-        linkedin: LinkedinStrategy
-    };
-
-    const Strategy = strategies[provider];
-
-    if (!Strategy) {
-        logger.error(`Unsupported strategy provider: ${provider}`);
-        throw new Error(`Unsupported strategy provider: ${provider}`);
-    }
-
-    if (provider === 'google') {
-        return new GoogleStrategy(options, verify);
-    } else if (provider === 'github') {
-        return new GitHubStrategy(options, verify);
-    } else if (provider === 'facebook') {
-        return new FacebookStrategy(options, verify);
-    } else if (provider === 'linkedin') {
-        return new LinkedinStrategy(options, verify);
-    } else {
-        logger.error(`Unsupported strategy provider: ${provider}`);
-        throw new Error(`Unsupported strategy provider: ${provider}`);
-    }
-}
+import { getClientId, getClientSecret, getAuthCallbackURL, createStrategy } from "../utils/utils";
 
 /**
  * Links an OAuth provider to a user's account.
