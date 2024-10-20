@@ -33,7 +33,7 @@ createLogDirectories();
 
 // Define a rotating stream for Pino
 const rotatingStream = createRotatingWriteStream({
-    filename: 'server-%DATE%.log',
+    filename: 'server.log',
     path: pinoLogDir,
     interval: '1d', // Rotate logs daily
     maxFiles: 14, // Keep logs for 14 days
@@ -43,15 +43,30 @@ const rotatingStream = createRotatingWriteStream({
 // Pino configuration
 const pinoLogger = pino({
     level: LOG_LEVEL ?? 'info',
+    timestamp: pino.stdTimeFunctions.isoTime,
     transport: {
-        target: 'pino-pretty', // Pretty logs for development
-        options: { colorize: true }
+        targets: [
+            {
+                target: 'pino-pretty', // Pretty logs for development
+                options: { colorize: true }
+            },
+            {
+                target: 'pino-pretty', // Pretty logs for production without colors
+                options: {
+                    ignore: 'pid,hostname',
+                    translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
+                    destination: path.join(pinoLogDir, 'server.log'),
+                    mkdir: true,
+                },
+                
+            }
+        ]
     },
 }, rotatingStream);
 
 // Define the log formatting options for Winston
 const { combine, timestamp, json, printf } = winston.format;
-const timestampFormat = 'MMM-DD-YYYY HH:mm:ss';
+const timestampFormat = 'DD-MM-YYYY HH:mm:ss';
 
 // Define a daily rotate transport for Winston
 const dailyRotateFileTransport = new DailyRotateFile({
