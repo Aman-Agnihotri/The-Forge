@@ -4,7 +4,7 @@
 
 While this project is a work in progress, its first release will lay the groundwork for more advanced functionality in future iterations.
 
-## Features in the First Release ✨
+## ✨ Features in the First Release
 
 ### 1. **Authentication & Authorization**
 - **JWT-Based Authentication**: Secure user authentication system using tokens.
@@ -23,7 +23,7 @@ While this project is a work in progress, its first release will lay the groundw
 ### 5. **API Documentation**
 - Comprehensive and interactive API documentation to make integration seamless for developers.
 
-## Future Developments 🔮
+## 🔮 Future Developments
 
 The Forge is just getting started! Future versions will include features such as:
 - **Caching**: Redis-based caching to boost performance and reduce load on the database.
@@ -32,7 +32,7 @@ The Forge is just getting started! Future versions will include features such as
 
 Stay tuned as The Forge continues to evolve with more powerful tools and integrations!
 
-## Tech Stack 🛠️
+## 🛠️ Tech Stack
 
 - **Backend**: Node.js with Express.js
 - **Language**: TypeScript
@@ -41,7 +41,7 @@ Stay tuned as The Forge continues to evolve with more powerful tools and integra
 - **Logging**: Winston and Pino (It's a choice. Both are implemented in the suite)
 - **API Documentation**: Swagger
 
-## Installation & Setup ⚙️
+## ⚙️ Installation & Setup
 
 To set up and run The Forge locally:
 
@@ -64,6 +64,6 @@ To set up and run The Forge locally:
    ```bash
    npm run dev
 
-## License 📄
+## 📄 License
 
-The Forge is licensed under the **MIT License**
+The Forge is licensed under the [MIT License](https://github.com/Aman-Agnihotri/The-Forge?tab=readme-ov-file#)
