@@ -1,5 +1,9 @@
 import request from 'supertest';
-import app from '../../src/app';
+import { app, server } from '../../src/app';
+
+afterAll((done) => {
+  server.close(done);
+});
 
 describe("JWT Authentication Tests", () => {
   // User Registration Tests
@@ -8,9 +12,9 @@ describe("JWT Authentication Tests", () => {
       const res = await request(app)
         .post("/v1/auth/register")
         .send({ 
-          username: `newuser${Date.now()}`,
-          email: `newuser${Date.now()}@example.com`,
-          password: `ValidPass${Date.now()}!`
+          username: `newuser`,
+          email: `newuser@example.com`,
+          password: `ValidPass!`
         });
 
       expect(res.statusCode).toBe(201);
@@ -45,7 +49,7 @@ describe("JWT Authentication Tests", () => {
         .post("/v1/auth/register")
         .send({ 
           username: "duplicateEmailUser", 
-          email: "string@hotmail.com", // A test email that is already registered in the database
+          email: "user@usermail.com", // A test email that is already registered in the database
           password: "ValidPass123!" 
         });
 
@@ -58,7 +62,7 @@ describe("JWT Authentication Tests", () => {
     test("Login with valid credentials", async () => {
       const res = await request(app)
         .post("/v1/auth/login")
-        .send({ email: "string@hotmail.com", password: "string123" });
+        .send({ email: "user@usermail.com", password: "user1234" });
   
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty("token");

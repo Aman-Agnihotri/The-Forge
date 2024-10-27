@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
     res.send("The Forge API is running. <a href='" + API_PATH + "/auth/linkedin'>Login with Linkedin</a>");
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     logger.info(`The Forge API is running on port ${PORT}.`);
 });
 
@@ -48,4 +48,4 @@ process.on('uncaughtException', (error: Error) => {
     process.exit(1);  // Optional: Exit on critical failure
 });
 
-export default app;
+export { app, server };

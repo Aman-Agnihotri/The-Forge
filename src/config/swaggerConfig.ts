@@ -1,8 +1,11 @@
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 import { Express } from 'express';
 import logger from '../services/logger';
 import { HOST_API_URL, NODE_ENV } from '../utils/constants';
+
+const swaggerTheme = new SwaggerTheme();
 
 // Basic configuration for Swagger
 const swaggerOptions = {
@@ -39,6 +42,9 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
  * @param {Express} app The Express.js app to add the Swagger UI to.
  */
 export const setupSwagger = (app: Express) => {
-    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, { swaggerOptions: { persistAuthorization: true } }));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+        customCss: swaggerTheme.getBuffer(SwaggerThemeNameEnum.ONE_DARK),
+        swaggerOptions: { persistAuthorization: true } 
+    }));
     logger.info('Swagger documentation available at /api-docs');
 };

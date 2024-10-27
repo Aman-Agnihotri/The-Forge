@@ -5,13 +5,13 @@
   "scripts": {
     "dev": "nodemon src/app.ts | pino-pretty",
     "start": "ts-node src/app.ts | pino-pretty",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand --detectOpenHandles",
     "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "Aman Agnihotri",
   "license": "ISC",
-  "description": "A comprehensive API suite for straightforward backend development.",
+  "description": "A comprehensive API suite for straight-forward backend development.",
   "dependencies": {
     "@prisma/client": "^5.21.1",
     "argon2": "^0.41.1",
@@ -33,6 +33,7 @@
     "prisma": "^5.21.1",
     "rate-limiter-flexible": "^5.0.4",
     "swagger-jsdoc": "^6.2.8",
+    "swagger-themes": "^1.4.3",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.15.0",
     "winston-daily-rotate-file": "^5.0.0",
