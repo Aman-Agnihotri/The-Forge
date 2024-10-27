@@ -9,11 +9,12 @@ describe("JWT Authentication Tests", () => {
   // User Registration Tests
   describe("User Registration", () => {
     test("Register with valid data", async () => {
+      const uniqueId = Math.floor(Math.random() * 1000);
       const res = await request(app)
         .post("/v1/auth/register")
         .send({ 
-          username: `newuser`,
-          email: `newuser@example.com`,
+          username: `newuser${uniqueId}`,
+          email: `newuser${uniqueId}@example.com`,
           password: `ValidPass!`
         });
 
