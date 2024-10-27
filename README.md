@@ -66,4 +66,4 @@ To set up and run The Forge locally:
 
 ## 📄 License
 
-The Forge is licensed under the [MIT License](https://github.com/Aman-Agnihotri/The-Forge?tab=readme-ov-file#)
+The Forge is licensed under the [MIT License](https://github.com/Aman-Agnihotri/The-Forge?tab=MIT-1-ov-file)
