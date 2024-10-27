@@ -74,7 +74,7 @@ router.use((req, res, next) => {
  *         description: Error retrieving users.
  */
 router.get('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Fetching all users');
+    logger.info('Fetching all users...');
     next();
 }, getAllUsers);
 
@@ -133,7 +133,7 @@ router.get('/', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error retrieving users.
  */
 router.get('/all', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Fetching all users including deleted');
+    logger.info('Fetching all users including deleted...');
     next();
 }, getAllUsersIncludingDeleted);
 
@@ -318,7 +318,7 @@ router.get('/all/:id/', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error creating user.
  */
 router.post('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Creating a new user');
+    logger.info('Creating a new user...');
     next();
 }, createUser);
 

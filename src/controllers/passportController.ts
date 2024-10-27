@@ -44,7 +44,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
     });
 
     if (existingProvider) {
-        logger.warn(`User ${loggedInUserId} tried to link an already linked provider: ${profile.provider}`);
+        logger.warn(`User '${loggedInUserId}' tried to link an already linked provider: ${profile.provider}`);
         return done(JSON.stringify({
             message: 'This provider is already linked to your account',
             status: 409
@@ -57,7 +57,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
     });
     // Check if the OAuth account that the user is trying to link has the same email as the logged in user
     if (existingUserEmail && existingUserEmail.email !== profile.emails[0].value) {
-        logger.warn(`User ${loggedInUserId} tried to link a provider with a different email: ${profile.emails[0].value}`);
+        logger.warn(`User '${loggedInUserId}' tried to link a provider with a different email: ${profile.emails[0].value}`);
         return done(JSON.stringify({
             message: 'The OAuth account that you are trying to link has a different email than your account',
             status: 409
@@ -76,7 +76,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
             }
         }
     });
-    logger.warn(`User ${loggedInUserId} tried to link a provider with a different email: ${profile.emails[0].value}`);
+    logger.info(`User '${loggedInUserId}' successfully linked provider: ${profile.provider}`);
     return done(null, updatedUser, token);
 }
 

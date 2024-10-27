@@ -72,12 +72,12 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
             }
         })
         if (!role) {
-            logger.warn(`Role with id ${id} not found`);
+            logger.warn(`Role with id '${id}' not found`);
             res.status(404).json({ message: 'Role not found' });
             return;
         }
 
-        logger.info(`Role with id ${id} fetched successfully`);
+        logger.info(`Role with id '${id}' fetched successfully`);
         res.json(role);
         return;
     } catch (error) {
@@ -120,14 +120,14 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        logger.info(`Role $(newRole.name) created successfully`);
+        logger.info(`Role '${newRole.name}' created successfully`);
 
         res.status(201).json(newRole);
         return;
     } catch (error) {
         if ((error as any).code === 'P2002') {
             // Handle unique constraint violations (e.g., role name already exists)
-            logger.warn(`Role name ${name} already exists`);
+            logger.warn(`Role name '${name}' already exists`);
             res.status(400).json({ message: 'Role name already exists' });
             return;
         } else {
@@ -184,12 +184,12 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
         });
 
         if (!updatedRole) {
-            logger.warn(`Role with id ${id} not found`);
+            logger.warn(`Role with id '${id}' not found`);
             res.status(404).json({ message: 'Role not found' });
             return;
         }
 
-        logger.info(`Role with id ${id} updated successfully`);
+        logger.info(`Role with id '${id}' updated successfully`);
         res.json(updatedRole);
         return;
     } catch (error) {
@@ -220,7 +220,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
         });
 
         if (!role) {
-            logger.warn(`Role with id ${id} not found`);
+            logger.warn(`Role with id '${id}' not found`);
             res.status(404).json({ message: 'Role not found' });
             return;
         }
@@ -233,7 +233,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
         // Delete the role
         await prisma.roles.delete({ where: { id } });
             
-        logger.info(`Role ${role.name} deleted successfully`);
+        logger.info(`Role '${role.name}' deleted successfully`);
         res.json({ message: 'Role deleted successfully' });
         return;
     } catch (error) {

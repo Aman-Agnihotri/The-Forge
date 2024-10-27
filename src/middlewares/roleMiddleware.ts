@@ -13,7 +13,7 @@ export const authorizeRoles = (roles: string[]) => {
         }
 
         if (!user.roles || user.roles.length === 0) {
-            logger.warn(`Access denied: User ${user.id} has no roles assigned`);
+            logger.warn(`Access denied: User '${user.id}' has no roles assigned`);
             res.status(403).json({ message: 'Access denied: User has no roles assigned' });
             return;
         }
@@ -21,12 +21,12 @@ export const authorizeRoles = (roles: string[]) => {
         // Check if the user has at least one of the required roles
         const hasRole = user.roles.some((userRole: any) => roles.includes(userRole.role.name));
         if (!hasRole) {
-            logger.warn(`Access denied: User ${user.id} has insufficient permissions`);
+            logger.warn(`Access denied: User '${user.id}' has insufficient permissions`);
             res.status(403).json({ message: 'Access denied: insufficient permissions' });
             return;
         }
         
-        logger.info(`User ${user.id} authorized with roles: ${user.roles.map((role: any) => role.role.name).join(', ')}`);
+        logger.info(`User '${user.id}' authorized with roles: ${user.roles.map((role: any) => role.role.name).join(', ')}`);
         next(); // User has the required role, proceed to the next middleware
     };
 };

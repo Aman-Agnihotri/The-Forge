@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
-import { DEFAULT_ROLE } from '../utils/constants';
 import { registerUserSchema, updateUserSchema } from '../models/userModel';
 
 /**
@@ -128,7 +127,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User with user ID ${id} not found. The user may be soft-deleted.`)
+            logger.warn(`User with user ID '${id}' not found. The user may be soft-deleted.`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -139,7 +138,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     } catch (error) {
         logger.error(error);
         next(error);
-        res.status(500).json({ message: `Encountered some error while retrieving user with ID ${id}` });
+        res.status(500).json({ message: `Encountered some error while retrieving user with the provided ID` });
         return;
     }
 };
@@ -181,18 +180,18 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
         });
 
         if (!user) {
-            logger.warn(`User with user ID ${id} not found`)
+            logger.warn(`User with user ID '${id}' not found`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
 
-        logger.info(`User ${user.username} fetched successfully`)
+        logger.info(`User '${user.username}' fetched successfully`)
         res.json(user);
         return;
     } catch (error) {
         logger.error(error);
         next(error);
-        res.status(500).json({ message: `Encountered some error while retrieving user with ID ${id}` });
+        res.status(500).json({ message: `Encountered some error while retrieving user with the provided ID.` });
         return;
     }
 };
@@ -219,6 +218,16 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     const { email, username, password, role_name } = parseResult.data;
 
     try {
+
+        // Check if the role exists
+        const role = await prisma.roles.findUnique({ where: { name: role_name } });
+
+        if (!role) {
+            logger.warn(`User creation failed. Role '${role_name}' does not exist.`);
+            res.status(400).json({ message: 'Role does not exist' });
+            return;
+        }
+
         // Hash the password (only for non-OAuth users)
         const hashed_password = await hashPassword(password);
 
@@ -241,51 +250,20 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        // If a role_name is provided, find the role and connect it
-        if (role_name) {
-            const role = await prisma.roles.findUnique({ where: { name: role_name } });
-
-            if (!role) {
-                logger.warn(`User creation failed. Role ${role_name} does not exist.`);
-                res.status(400).json({ message: 'Role does not exist' });
-                return;
-            }
-
-            if (role?.id) {
-                await prisma.user_role.create({
-                    data: {
-                        userId: newUser.id,
-                        roleId: role.id
-                    }
-                });
-            }
-
-            // Append the role to the newUser object
-            newUser.roles = [{ role: role }];
-
-        } else {
-            // If no role_name is provided, assign the default role
-            const defaultRole = await prisma.roles.findUnique({ where: { name: DEFAULT_ROLE } });
-
-            if (defaultRole?.id) {
-                await prisma.user_role.create({
-                    data: {
-                        userId: newUser.id,
-                        roleId: defaultRole.id
-                    }
-                });
-            } else {
-                logger.error(`User creation failed. Default '${DEFAULT_ROLE}' role does not exist.`);
-                next(new Error(`User creation failed. Default '${DEFAULT_ROLE}' role does not exist.`));
-                res.status(500).json({ message: 'default "${DEFAULT_ROLE}" role does not exist' });
-                return;
-            }
-
-            // Append the default role to the newUser object
-            newUser.roles = [{ role: defaultRole }];
+        // Connect the role to the user
+        if (role?.id) {
+            await prisma.user_role.create({
+                data: {
+                    userId: newUser.id,
+                    roleId: role.id
+                }
+            });
         }
 
-        logger.info(`User ${newUser.username} created successfully`)
+        // Append the role to the newUser object
+        newUser.roles = [{ role: role }];
+
+        logger.info(`User '${newUser.username}' created successfully`)
         res.status(201).json(newUser);
         return;
     } catch (error) {
@@ -346,15 +324,15 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         if(password){
             if (id_of_user_to_update === user?.id) {
                 userUpdateData.password = await hashPassword(password);
-                logger.info(`User with id ${id_of_user_to_update} is updating their own password.`);
+                logger.info(`User with id '${id_of_user_to_update}' is updating their own password.`);
 
                 // Check if the authenticated user is an admin
             } else if(authenticatedUser.roles.every((role: any) => role.role.name === 'admin')) {
                 userUpdateData.password = await hashPassword(password);
-                logger.info(`User with id ${authenticatedUser.id} is an admin and is updating the password of user with id ${id_of_user_to_update}.`);
+                logger.info(`User with id '${authenticatedUser.id}' is an admin and is updating the password of user with id '${id_of_user_to_update}'.`);
 
             } else {
-                logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id ${authenticatedUser.id} is trying to change the password of user with id ${id_of_user_to_update}.`);
+                logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${authenticatedUser.id}' is trying to change the password of user with id '${id_of_user_to_update}'.`);
                 res.status(403).json({ message: 'You do not have permission to update this user. You can only change your own password. Please contact an admin for additional help.' });
                 return;
             }
@@ -365,7 +343,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
             if (!role) {
-                logger.warn(`User update failed. Role ${role_name} does not exist.`);
+                logger.warn(`User update failed. Role '${role_name}' does not exist.`);
                 res.status(400).json({ message: 'Role does not exist' });
                 return;
             }
@@ -410,13 +388,13 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        logger.info(`User ${updatedUser.username} updated successfully`)
+        logger.info(`User '${updatedUser.username}' updated successfully`)
         res.json(updatedUser);
         return;
     } catch (error) {
         if ((error as any).code === 'P2025') {
             // Record not found
-            logger.warn(`User update failed. User with id ${id} not found.`);
+            logger.warn(`User update failed. User with id '${id}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else {
@@ -449,11 +427,11 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         });
 
         if (!user) {
-            logger.warn(`User delete failed. User with id ${id} not found.`);
+            logger.warn(`User delete failed. User with id '${id}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else if (user.deletedAt) {
-            logger.warn(`User delete failed. User with id ${id} is already deleted.`);
+            logger.warn(`User delete failed. User with id '${id}' is already deleted.`);
             res.status(400).json({ message: 'User is already deleted' });
             return;
         }
@@ -463,7 +441,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
             data: { deletedAt: new Date() } // Mark user as deleted by setting the timestamp
         });
 
-        logger.info(`User with id ${id} deleted successfully`);
+        logger.info(`User with id '${id}' deleted successfully`);
         res.json({ message: 'User deleted successfully' });
         return;
     } catch (error) {
@@ -494,11 +472,11 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User restore failed. User with id ${id} not found.`);
+            logger.warn(`User restore failed. User with id '${id}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else if (!user.deletedAt) {
-            logger.warn(`User restore failed. User with id ${id} is not soft-deleted.`);
+            logger.warn(`User restore failed. User with id '${id}' is not soft-deleted.`);
             res.status(400).json({ message: 'User is not soft-deleted' });
             return;
         }
@@ -509,7 +487,7 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
             data: { deletedAt: null }
         });
 
-        logger.info(`User with id ${id} restored successfully`);
+        logger.info(`User with id '${id}' restored successfully`);
         res.json({ message: 'User restored successfully' });
         return;
     } catch (error) {
@@ -539,7 +517,7 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
         });
 
         if (!user) {
-            logger.warn(`User permanent deletion failed. User with id ${id} not found.`);
+            logger.warn(`User permanent deletion failed. User with id '${id}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -559,7 +537,7 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
             where: { id },
         });
 
-        logger.info(`User with id ${id} permanently deleted successfully`);
+        logger.info(`User with id '${id}' permanently deleted successfully`);
         res.json({ message: 'User permanently deleted successfully' });
         return;
     } catch (error) {

@@ -52,7 +52,7 @@ router.use((req, res, next) => {
  *         description: Error retrieving roles.
  */
 router.get('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Fetching all roles');
+    logger.info('Fetching all roles...');
     getAllRoles(req, res, next);
 });
 
@@ -137,7 +137,7 @@ router.get('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error creating role.
  */
 router.post('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Creating a new role');
+    logger.info('Creating a new role...');
     createRole(req, res, next);
 });
 

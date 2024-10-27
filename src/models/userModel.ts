@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_ROLE } from '../utils/constants';
 
 export const registerUserSchema = z.object({
     username: z.string({
@@ -22,7 +23,8 @@ export const registerUserSchema = z.object({
         .min(1, "Role name cannot be empty.")
         .min(3, "Role name must be at least 3 characters.")
         .max(10, "Role name above 10 characters is invalid.")
-        .optional(),
+        .optional()
+        .default(DEFAULT_ROLE),
 });
 
 export const loginUserSchema = z.object({
@@ -37,7 +39,6 @@ export const loginUserSchema = z.object({
         .min(1, "Password cannot be empty. It is required.")
         .min(8, "Password must be at least 8 characters long."),
 });
-
 
 export const updateUserSchema = z.object({
     username: z.string()
