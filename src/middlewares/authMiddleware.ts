@@ -56,8 +56,8 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
             (req as any).user = user;
             return next();
         } catch (error) {
-            logger.error("Token verification error: " + error);
-            return res.status(403).json({ message: "Invalid or expired authentication token" });
+            logger.warn("Token verification error: " + error);
+            return res.status(401).json({ message: "Invalid or expired authentication token" });
         }
     }
 

@@ -54,13 +54,8 @@ router.get("/", async (req: any, res: any, next: any) => {
 
         const userinfo = await prisma.users.findUnique({ where: { id: user.id } });
 
-        if (!userinfo) {
-            logger.warn(`Use not found with id '${user.id}'`);
-            return res.status(401).json({ error: "Unauthorized" });
-        }
-
-        logger.info(`User '${userinfo.username}' accessed the protected route`);
-        res.json({ message: `Welcome to the secret club, ${userinfo.username}!`, user });
+        logger.info(`User '${userinfo?.username}' accessed the protected route`);
+        res.json({ message: `Welcome to the secret club, ${userinfo?.username}!`, user });
     } catch (error) {
         logger.error(`Error accessing protected route: ${(error as any).message}`);
         next(error);

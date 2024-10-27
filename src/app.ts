@@ -47,3 +47,5 @@ process.on('uncaughtException', (error: Error) => {
     logger.error('Uncaught exception occurred', { error });
     process.exit(1);  // Optional: Exit on critical failure
 });
+
+export default app;
