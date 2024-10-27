@@ -23,7 +23,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
     const parseResult = registerUserSchema.safeParse(req.body);
 
     if (!parseResult.success) {
-        logger.warn("User registration failed. Invalid request body.\n" + parseResult.error.errors[0].message);
+        logger.warn("User registration failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
         return res.status(400).json({ message: parseResult.error.errors[0].message });
     }
     
@@ -115,7 +115,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     const parseResult = loginUserSchema.safeParse(req.body);
     
     if (!parseResult.success) {
-        logger.warn("User login failed. Invalid request body.\n" + parseResult.error.errors[0].message);
+        logger.warn("User login failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
         return res.status(400).json({ message: parseResult.error.errors[0].message });
     }
 

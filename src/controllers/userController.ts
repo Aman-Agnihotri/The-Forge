@@ -3,6 +3,7 @@ import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
 import { DEFAULT_ROLE } from '../utils/constants';
+import { registerUserSchema, updateUserSchema } from '../models/userModel';
 
 /**
  * Retrieves all non-deleted users and their associated roles and providers.
@@ -214,21 +215,15 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
  * @throws {500} - If an error occurs while creating the user
  */
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
-    const { email, username, password, role_name } = req.body;
+    const parseResult = registerUserSchema.safeParse(req.body);
 
-    if (!email){
-        logger.warn("User creation failed. Email is required.");
-        res.status(400).json({ message: 'Email is required' });
-        return;
-    } else if (!username){
-        logger.warn("User creation failed. Username is required.");
-        res.status(400).json({ message: 'Username is required' });
-        return;
-    } else if (!password){
-        logger.warn("User creation failed. Password is required.");
-        res.status(400).json({ message: 'Password is required' });
+    if (!parseResult.success) {
+        logger.warn("User creation failed. Invalid request body. \nError: " + parseResult.error.errors[0].message);
+        res.status(400).json({ message: parseResult.error.errors[0].message });
         return;
     }
+
+    const { email, username, password, role_name } = parseResult.data;
 
     try {
         // Hash the password (only for non-OAuth users)
@@ -331,16 +326,19 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const id_of_user_to_update = id;
-    const { email, username, password, role_name } = req.body;
+    
+    const parseResult = updateUserSchema.safeParse(req.body);
+
+    if (!parseResult.success) {
+        logger.warn("User update failed. Invalid request body. \nError: " + parseResult.error.errors[0].message);
+        res.status(400).json({ message: parseResult.error.errors[0].message });
+        return;
+    }
+
+    const { email, username, password, role_name } = parseResult.data;
 
     const authenticatedUser = req.user as any;
     const user = await prisma.users.findUnique({ where: { id: authenticatedUser.id } });
-
-    if (!email && !username && !password && !role_name){
-        logger.warn("User update failed. At least one field is required.");
-        res.status(400).json({ message: 'At least one field is required' });
-        return;
-    }
 
     try {
         const userUpdateData: any = {};

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import logger from '../services/logger';
+import { createRoleSchema, updateRoleSchema } from '../models/roleModel';
 
 /**
  * Retrieves all roles with their associated users.
@@ -100,14 +101,15 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
  * @throws {500} - If an error occurs while creating the role
  */
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
-    const { name } = req.body;
+    const parseResult = createRoleSchema.safeParse(req.body);
 
-    // Check if the role is given in the request body
-    if (!name) {
-        logger.warn('Role name is required to create a new role');
-        res.status(400).json({ message: 'Role name is required' });
+    if (!parseResult.success) {
+        logger.warn("Role creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        res.status(400).json({ message: parseResult.error.errors[0].message });
         return;
     }
+
+    const { name } = parseResult.data;
 
     try {
         // Create the new role
@@ -152,14 +154,16 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
  */
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const { name } = req.body;
 
-    // Check if the role is given in the request body
-    if (!name) {
-        logger.warn('Role name not provided in the update request');
-        res.status(400).json({ message: 'Role name is required' });
+    const parseResult = updateRoleSchema.safeParse(req.body);
+
+    if (!parseResult.success) {
+        logger.warn("Role update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        res.status(400).json({ message: parseResult.error.errors[0].message });
         return;
     }
+
+    const { name } = parseResult.data;
 
     try {
         const updatedRole = await prisma.roles.update({
