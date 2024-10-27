@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import logger from '../services/logger';
-import { createRoleSchema, updateRoleSchema } from '../models/roleModel';
+import { roleActionSchema } from '../models/roleModel';
 
 /**
  * Retrieves all roles with their associated users.
@@ -94,14 +94,13 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
  * @param {Request} req - The request object
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
- * @returns {Promise<any>} - The created role information
  * 
  * @throws {400} - If the role name is not provided in the request body
  * @throws {400} - If the role name already exists
  * @throws {500} - If an error occurs while creating the role
  */
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
-    const parseResult = createRoleSchema.safeParse(req.body);
+    const parseResult = roleActionSchema.safeParse(req.body);
 
     if (!parseResult.success) {
         logger.warn("Role creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
@@ -146,7 +145,6 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
  * @param {Request} req - The request object
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
- * @returns {Promise<any>} - The updated role information
  * 
  * @throws {400} - If the role name is not provided in the request body
  * @throws {404} - If the role with the provided ID does not exist
@@ -155,7 +153,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const parseResult = updateRoleSchema.safeParse(req.body);
+    const parseResult = roleActionSchema.safeParse(req.body);
 
     if (!parseResult.success) {
         logger.warn("Role update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);

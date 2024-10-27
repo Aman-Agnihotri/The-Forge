@@ -12,8 +12,6 @@ import { registerUserSchema, updateUserSchema } from '../models/userModel';
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  *
- * @returns {Promise<any>} - The response to the request
- *
  * @throws {500} - If there is an error while retrieving the users
  */
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -57,8 +55,6 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  * 
- * @returns {Promise<any>} - The response to the request
- * 
  * @throws {500} - If there is an error while retrieving the users
  */
 export const getAllUsersIncludingDeleted = async (req: Request, res: Response, next: NextFunction) => {
@@ -101,8 +97,6 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
  * @param {Request} req - The request object
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
- * 
- * @returns {Promise<any>} - The response to the request
  * 
  * @throws {404} - If the user is not found
  * @throws {500} - If there is an error while retrieving the user
@@ -209,7 +203,6 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
  * @param {Request} req - The request object
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
- * @returns {Promise<any>} - The created user information
  *
  * @throws {400} - If the request body is invalid
  * @throws {500} - If an error occurs while creating the user
@@ -316,7 +309,6 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
  * @param {Request} req - The request object
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
- * @returns {Promise<void>} - The response to the request
  *
  * @throws {400} - If at least one field is not provided in the request body
  * @throws {403} - If the requesting user is not an admin and is trying to update a user other than themselves
