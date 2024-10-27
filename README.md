@@ -66,8 +66,4 @@ To set up and run The Forge locally:
 
 ## License 📄
 
-The Forge is licensed under the **MIT License**.
-
----
-
-Created with passion by Aman Agnihotri
+The Forge is licensed under the **MIT License**
