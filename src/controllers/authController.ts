@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { generateToken } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
+import { registerUserSchema, loginUserSchema } from "../models/userModel";
 import { prisma } from "../config/prisma";
 import logger from "../services/logger";
 import { DEFAULT_ROLE } from "../utils/constants";
@@ -19,12 +20,14 @@ import { DEFAULT_ROLE } from "../utils/constants";
  * @throws {500} - An error occurred while registering user
  */
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { username, email, password, role_name } = req.body;
+    const parseResult = registerUserSchema.safeParse(req.body);
 
-    if(!username || !email || !password){
-        logger.warn("User registration failed. All fields are required.");
-        return res.status(400).json({ message: "All fields are required." });
+    if (!parseResult.success) {
+        logger.warn("User registration failed. Invalid request body.\n" + parseResult.error.errors[0].message);
+        return res.status(400).json({ message: parseResult.error.errors[0].message });
     }
+    
+    const { username, email, password, role_name } = parseResult.data;
 
     try{
         //Check if the user already exists
@@ -109,7 +112,14 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
  * @throws {500} - An error occurred while logging in
  */
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { email, password } = req.body;
+    const parseResult = loginUserSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+        logger.warn("User login failed. Invalid request body.\n" + parseResult.error.errors[0].message);
+        return res.status(400).json({ message: parseResult.error.errors[0].message });
+    }
+
+    const { email, password } = parseResult.data;
 
     try{
         //Check if the user exists
