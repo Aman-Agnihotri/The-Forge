@@ -1,7 +1,7 @@
 import { Strategy as GoogleStrategy } from "passport-google-oauth2";
 import { Strategy as GithubStrategy } from "passport-github2";
 import { Strategy as FacebookStrategy } from "passport-facebook";
-import { Strategy as LinkedinStrategy } from "passport-linkedin-oauth2";
+// import { Strategy as LinkedinStrategy } from "passport-linkedin-oauth2";
 
 import { 
     HOST_API_URL,
@@ -62,7 +62,7 @@ const strategies: Record<string, StrategyConstructor> = {
     GoogleStrategy,
     GithubStrategy,
     FacebookStrategy,
-    LinkedinStrategy,
+    // LinkedinStrategy,
 };
 
 /**

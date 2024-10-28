@@ -31,7 +31,7 @@ app.use(errorHandler);
 setupSwagger(app);
 
 app.get("/", (req, res) => {
-    res.send("The Forge API is running. <a href='" + API_PATH + "/auth/linkedin'>Login with Linkedin</a>");
+    res.send("The Forge API is running. Go to /api-docs to view the API documentation.");
 });
 
 const server = app.listen(PORT, () => {

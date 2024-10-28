@@ -150,8 +150,6 @@ router.post("/register", registrationRateLimiter, (req, res, next) => {
  *         schema:
  *           type: string
  *     responses:
- *       200:
- *         description: OAuth process initiated.
  *       400:
  *         description: Invalid provider.
  *       401:

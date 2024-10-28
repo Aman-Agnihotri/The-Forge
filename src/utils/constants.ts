@@ -44,21 +44,21 @@ export const clientIds = {
     google: getEnvVar('GOOGLE_CLIENT_ID'),
     github: getEnvVar('GITHUB_CLIENT_ID'),
     facebook: getEnvVar('FACEBOOK_CLIENT_ID'),
-    linkedin: getEnvVar('LINKEDIN_CLIENT_ID')
+    // linkedin: getEnvVar('LINKEDIN_CLIENT_ID')
 };
 
 export const clientSecrets = {
     google: getEnvVar('GOOGLE_CLIENT_SECRET'),
     github: getEnvVar('GITHUB_CLIENT_SECRET'),
     facebook: getEnvVar('FACEBOOK_CLIENT_SECRET'),
-    linkedin: getEnvVar('LINKEDIN_CLIENT_SECRET')
+    // linkedin: getEnvVar('LINKEDIN_CLIENT_SECRET')
 };
 
 export const providerScopes: Record<string, string[]> = {
     google: ['email', 'profile'],
     github: ['user:email'],
     facebook: ['email'],
-    linkedin: ['r_emailaddress', 'r_liteprofile']
+    // linkedin: ['r_emailaddress', 'r_liteprofile']
 };
 
 export type OAuthProvider = keyof typeof clientIds;
