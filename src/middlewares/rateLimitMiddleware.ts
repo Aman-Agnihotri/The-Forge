@@ -3,11 +3,11 @@ import rateLimit from "express-rate-limit";
 import { Request, Response, NextFunction } from "express";
 import logger from "../services/logger";
 
-// Basic IP-based rate limiter: 100 requests per 15 minutes per IP
+// Basic IP-based rate limiter: 100 requests per 10 minutes per IP
 export const ipRateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per 15 minutes
-    message: 'Too many requests from this IP, please try again after 15 minutes.',
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    max: 100, // Limit each IP to 100 requests per 10 minutes
+    message: 'Too many requests from this IP, please try again after 10 minutes.',
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     handler: (req, res, next, options) => {
@@ -50,10 +50,10 @@ export const oauthLoginRateLimiter = rateLimit({
     }
 });
 
-// Rate limiter for OAuth account linking (e.g., 10 attempts per 15 minutes)
+// Rate limiter for OAuth account linking (e.g., 5 attempts per 15 minutes)
 export const oauthLinkingRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 linking requests
+    max: 5, // Limit each IP to 10 linking requests
     message: 'Too many OAuth linking attempts from this IP, please try again after 15 minutes.',
     handler: (req, res, next, options) => {
         logger.warn(`OAuth linking rate limit exceeded for IP: ${req.ip}`);
@@ -64,7 +64,7 @@ export const oauthLinkingRateLimiter = rateLimit({
 // Define rate limits for different roles (requests per hour)
 const rateLimitsByRole = {
     admin: { points: 5000, duration: 60 * 60 }, // 5000 requests per hour for admins
-    user: { points: 1000, duration: 60 * 60 },  // 1000 requests per hour for regular users
+    user: { points: 500, duration: 60 * 60 },  // 500 requests per hour for regular users
 };
 
 // Create a RateLimiterMemory instance for each role
