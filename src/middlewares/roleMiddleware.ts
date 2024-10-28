@@ -6,12 +6,6 @@ export const authorizeRoles = (roles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
         const user = (req as any).user; // Access the authenticated user from the request
 
-        if (!user) {
-            logger.warn('Access denied: User not authenticated');
-            res.status(403).json({ message: 'Access denied: User not authenticated' });
-            return;
-        }
-
         if (!user.roles || user.roles.length === 0) {
             logger.warn(`Access denied: User '${user.id}' has no roles assigned`);
             res.status(403).json({ message: 'Access denied: User has no roles assigned' });
