@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { app, server } from '../../src/app';
-import { generateToken } from '../../src/utils/jwt';
+import { app, server } from '../src/app';
+import { generateToken } from '../src/utils/jwt';
 
 afterAll((done) => {
   server.close(done);
@@ -21,7 +21,7 @@ const tokens = {
 };
 
 // Mock Prisma calls
-jest.mock('../../src/config/prisma', () => ({
+jest.mock('../src/config/prisma', () => ({
     prisma: {
         users: {
             findUnique: jest.fn().mockImplementation(({ where: { id } }) =>

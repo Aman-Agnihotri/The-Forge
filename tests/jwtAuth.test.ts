@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { app, server } from '../../src/app';
-import { prisma } from '../../src/config/prisma';
+import { app, server } from '../src/app';
+import { prisma } from '../src/config/prisma';
 
 afterAll((done) => {
   server.close(done);
