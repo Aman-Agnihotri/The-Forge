@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { app, server } from '../../src/app';
+import { prisma } from '../../src/config/prisma';
 
 afterAll((done) => {
   server.close(done);
@@ -8,13 +9,31 @@ afterAll((done) => {
 describe("JWT Authentication Tests", () => {
   // User Registration Tests
   describe("User Registration", () => {
+
+    afterAll(async () => {
+      // Clean up the database after testing
+      const user = await prisma.users.findUnique({
+        where: { email: "newuser@example.com" },
+      });
+
+      // Ensure the user is freed of any roles
+      await prisma.user_role.deleteMany({
+        where: { userId: user?.id },
+      });
+
+      // Permanently delete the user
+      await prisma.users.delete({
+          where: { id: user?.id },
+      });
+
+    });
+
     test("Register with valid data", async () => {
-      const uniqueId = Math.floor(Math.random() * 1000);
       const res = await request(app)
         .post("/v1/auth/register")
         .send({ 
-          username: `newuser${uniqueId}`,
-          email: `newuser${uniqueId}@example.com`,
+          username: `newuser`,
+          email: `newuser@example.com`,
           password: `ValidPass!`
         });
 
