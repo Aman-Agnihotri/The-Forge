@@ -8,7 +8,8 @@ import {
     updateUser,
     deleteUser,
     restoreUser,
-    permanentlyDeleteUser
+    permanentlyDeleteUser,
+    bulkPermanentlyDeleteUsers
 } from "../controllers/userController";
 import { authorizeRoles } from "../middlewares/roleMiddleware";
 import logger from "../services/logger";
@@ -491,5 +492,59 @@ router.delete('/permanent/:id', authorizeRoles(['admin']), (req, res, next) => {
     logger.info(`Permanently deleting user by ID: ${req.params.id}`);
     next();
 }, permanentlyDeleteUser);
+
+/**
+ * @swagger
+ * /api/users/bulk/permanent:
+ *   delete:
+ *     summary: Permanently delete multiple users (Admin only).
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of user IDs to be permanently deleted.
+ *               emails:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of user emails to be permanently deleted.
+ *               emailPattern:
+ *                 type: string
+ *                 description: Pattern to match user emails to be permanently deleted.
+ *             example:
+ *               userIds: ["user1", "user2"]
+ *               emails: ["user1@example.com", "user2@example.com"]
+ *               emailPattern: "@gmail.com"
+ *     responses:
+ *       200:
+ *         description: Users permanently deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: No user IDs or emails provided.
+ *       404:
+ *         description: One or more users not found.
+ *       500:
+ *         description: Error permanently deleting users.
+ */
+router.delete('/bulk/permanent', authorizeRoles(['admin']), (req, res, next) => {
+    logger.info(`Permanently deleting multiple users...`);
+    next();
+}, bulkPermanentlyDeleteUsers);
 
 export default router;

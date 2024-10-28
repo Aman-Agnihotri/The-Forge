@@ -547,3 +547,91 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
         return;
     }
 };
+
+/**
+ * Permanently delete multiple users by their IDs. This will delete all associated records (e.g. user roles, providers).
+ *
+ * @param {Request} req - The request object
+ * @param {Response} res - The response object
+ * @param {NextFunction} next - The next function in the middleware chain
+ *
+ * @throws {400} - If no user IDs or emails are provided
+ * @throws {404} - If one or more users are not found
+ * @throws {500} - If there is an error while permanently deleting the users
+ */
+export const bulkPermanentlyDeleteUsers = async (req: Request, res: Response, next: NextFunction) => {
+    const { userIds, emails, emailPattern } = req.body;
+
+    if ((!Array.isArray(userIds) || userIds.length === 0) && 
+        (!Array.isArray(emails) || emails.length === 0) && 
+        !emailPattern) {
+        logger.warn(`Bulk permanent deletion failed. No user IDs or emails provided.`);
+        res.status(400).json({ message: 'No user IDs or emails provided' });
+        return;
+    }
+
+    try {
+        let users;
+
+        if (Array.isArray(userIds) && userIds.length > 0) {
+            // Check if all users exist by IDs
+            users = await prisma.users.findMany({
+                where: { id: { in: userIds } },
+            });
+
+            if (users.length !== userIds.length) {
+                logger.warn(`Bulk permanent deletion failed. One or more users not found by IDs.`);
+                res.status(404).json({ message: 'One or more users not found by IDs' });
+                return;
+            }
+        } else if (Array.isArray(emails) && emails.length > 0) {
+            // Check if all users exist by emails
+            users = await prisma.users.findMany({
+                where: { email: { in: emails } },
+            });
+
+            if (users.length !== emails.length) {
+                logger.warn(`Bulk permanent deletion failed. One or more users not found by emails.`);
+                res.status(404).json({ message: 'One or more users not found by emails' });
+                return;
+            }
+        } else if (emailPattern) {
+            // Check if users exist by email pattern
+            users = await prisma.users.findMany({
+                where: { email: { contains: emailPattern } },
+            });
+
+            if (users.length === 0) {
+                logger.warn(`Bulk permanent deletion failed. No users found matching the email pattern.`);
+                res.status(404).json({ message: 'No users found matching the email pattern' });
+                return;
+            }
+        }
+
+        const userIdsToDelete = users?.map(user => user.id);
+
+        // Delete the providers associated with the users
+        await prisma.user_provider.deleteMany({
+            where: { userId: { in: userIdsToDelete } },
+        });
+
+        // Ensure the users are freed of any roles
+        await prisma.user_role.deleteMany({
+            where: { userId: { in: userIdsToDelete } },
+        });
+
+        // Permanently delete the users
+        await prisma.users.deleteMany({
+            where: { id: { in: userIdsToDelete } },
+        });
+
+        logger.info(`Users with IDs '${userIdsToDelete?.join(', ')}' permanently deleted successfully`);
+        res.json({ message: 'Users permanently deleted successfully' });
+        return;
+    } catch (error) {
+        logger.error(error);
+        next(error);
+        res.status(500).json({ message: 'Encountered some error while permanently deleting users' });
+        return;
+    }
+};
