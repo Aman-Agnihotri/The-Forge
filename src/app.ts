@@ -18,6 +18,8 @@ import { setupSwagger } from "./config/swaggerConfig";
 const app = express();
 app.use(express.json());
 
+app.set("trust proxy", 1); // Required for IP rate limiting
+
 app.use(helmet());
 app.use(cors());
 
