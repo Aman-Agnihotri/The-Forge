@@ -7,9 +7,10 @@ import {
     JsonWebTokenError 
 } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
-import { registerUserSchema, loginUserSchema } from "../models/userModel";
+import { registerUserSchema, loginUserSchema, validateUserRequest } from "../models/userModel";
 import { prisma } from "../config/prisma";
 import logger from "../services/logger";
+import { DEFAULT_ROLE } from "../utils/constants";
 
 /**
  * Register a new user.
@@ -25,20 +26,14 @@ import logger from "../services/logger";
  * @throws {500} - An error occurred while registering user
  */
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const parseResult = registerUserSchema.safeParse(req.body);
-
-    if (!parseResult.success) {
-        logger.warn("User registration failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
-        return res.status(400).json({ message: parseResult.error.errors[0].message });
-    }
     
-    const { username, email, password, role_name } = parseResult.data;
+    const { username, email, password, role_name } = validateUserRequest(null, req.body, registerUserSchema);
 
     try{
         //Check if the user already exists
         const user = await prisma.users.findUnique({ where: { email } });
         if(user){
-            logger.warn(`User already exists with email '${email}'.`);
+            logger.warn("User already exists with email: " + email);
             return res.status(409).json({ message: "User already exists with provided email address." });
         }
 
@@ -46,8 +41,11 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
         if (!role) {
-            logger.warn(`User registration failed. Role '${role_name}' does not exist.`);
-            return res.status(400).json({ message: 'Role does not exist' });
+            if (role_name === DEFAULT_ROLE) {
+                throw new Error("Default role '" + role_name + "' not found.");
+            }
+            logger.warn("User registration failed. Role '" + role_name + "' does not exist.");
+            return res.status(404).json({ message: 'Role does not exist' });
         }
 
         //Create a new user and hash the password
@@ -60,7 +58,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         });
 
         // Connect the role to the user
-        if (role?.id) {
+        if (role.id) {
             await prisma.user_role.create({
                 data: {
                     userId: newUser.id,
@@ -84,9 +82,10 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         // Return the JWT and the user object
         return res.status(201).json({ token, refreshToken, user: filteredUserData });
     } catch (error) {
-        // logger.error(error);
-        next(error);
-        // return res.status(500).json({ error: "An error occurred while registering user." });
+        if ((error as any).status){
+            return res.status((error as any).status).json({ message: (error as any).message });
+        }
+        next({ message: "An error occurred while registering user.", error });
     }
 };
 
@@ -104,14 +103,8 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
  * @throws {500} - An error occurred while logging in
  */
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const parseResult = loginUserSchema.safeParse(req.body);
-    
-    if (!parseResult.success) {
-        logger.warn("User login failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
-        return res.status(400).json({ message: parseResult.error.errors[0].message });
-    }
 
-    const { email, password } = parseResult.data;
+    const { email, password } = validateUserRequest(null, req.body, loginUserSchema);
 
     try{
         //Check if the user exists
@@ -154,9 +147,10 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         logger.info(`User '${user.username}' logged in successfully with email '${email}'.`);
         return res.status(200).json({ token, refreshToken, user: filteredUserData });
     } catch (error) {
-        // logger.error(error);
-        next(error);
-        // return res.status(500).json({ error: "An error occurred while logging in." });
+        if ((error as any).status){
+            return res.status((error as any).status).json({ message: (error as any).message });
+        }
+        next({ message: "An error occurred while logging in.", error });
     }
 };
 
@@ -217,9 +211,7 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
             return res.status(401).json({ message: "Malformed token" });
 
         } else {
-            // logger.error("Refresh token verification error: " + error);
-            next(error);
-            // return res.status(500).json({ error: "An error occurred while refreshing token." });
+            next({ message: "An error occurred while refreshing token.", error });
         }
     }
 };

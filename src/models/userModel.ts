@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import logger from '../services/logger';
 import { DEFAULT_ROLE } from '../utils/constants';
 
 export const registerUserSchema = z.object({
@@ -63,3 +64,36 @@ export const updateUserSchema = z.object({
 }).refine(data => Object.values(data).some(value => value !== undefined), {
     message: "At least one field must be provided.",
 });
+
+export function validateUserId(id: string){
+    const cuidRegex = /^c[0-9a-z]{24}$/i;
+    return cuidRegex.test(id);
+}
+
+export function validateUserRequest(id: string | null, body: any, schema?: any,) {
+    if (id) {
+        if (!validateUserId(id)) {
+            logger.warn(`Invalid user ID format: ${id}`);
+            const error = new Error(`Invalid user ID format`);
+            (error as any).status = 400;
+            throw error;
+        } else if (!body && !schema) {
+            return id;
+        }
+    }
+
+    if (body && schema) {
+        const parseResult = schema.safeParse(body);
+
+        if (!parseResult.success) {
+            logger.warn("Invalid request body. \nError: " + parseResult.error.errors[0].message);
+            const error = new Error(parseResult.error.errors[0].message);
+            (error as any).status = 400;
+            throw error;
+        }
+
+        return parseResult.data;
+    } else {
+        throw new Error('Provide atleast one of id or body and schema');
+    }
+}

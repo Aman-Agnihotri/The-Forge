@@ -45,6 +45,8 @@ router.use("/roles", useRateLimitMiddleware, roleRoutes);
  *                       type: string
  *       401:
  *         description: Unauthorized access.
+ *       429:
+ *         description: Rate limit exceeded.
  *       500:
  *         description: Internal server error.
  */
@@ -63,9 +65,7 @@ router.get("/", async (req: any, res: any, next: any) => {
         logger.info(`User '${userinfo?.username}' accessed the protected route`);
         res.json({ message: `Welcome to the secret club, ${userinfo?.username}!`, userinfo });
     } catch (error) {
-        logger.error(`Error accessing protected route: ${(error as any).message}`);
-        next(error);
-        res.status(500).json({ error: "Internal Server Error" });
+        next({ message: "Error accessing protected route", error });
     }
 });
 

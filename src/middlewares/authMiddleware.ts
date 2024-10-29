@@ -49,7 +49,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
             });
 
             if (!user) {
-                logger.warn("User with ID " + user_id + " not found: ");
+                logger.warn("User with ID " + user_id + " not found. ");
                 return res.status(404).json({ message: 'User not found' });
             }
 
@@ -63,9 +63,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
                 logger.warn("Malformed token: " + error.message);
                 return res.status(401).json({ message: "Malformed token" });
             } else {
-                logger.error("Token verification error: " + error);
-                next(error);
-                return res.status(500).json({ message: "An error occurred while token authentication." });
+                next({ message: "An error occurred while token authentication.", error });
             }
         }
     }

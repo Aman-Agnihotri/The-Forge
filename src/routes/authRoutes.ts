@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../config/prisma";
 import passport from "../controllers/passportController";
 import { PROVIDERS, HOST_UI_URL } from "../utils/constants";
-import { generateToken, verifyToken } from "../utils/jwt";
+import { generateToken } from "../utils/jwt";
 import { loginUser, registerUser, refreshToken } from "../controllers/authController";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import logger from "../services/logger";
@@ -231,28 +231,10 @@ router.get("/:provider", (req, res, next) => {
             return;
         }
 
-        try {
-            const decodedUser = verifyToken(token);
-            logger.info(`Token payload: ${token}`);
+        // Store the token in the state parameter for use in the callback
+        logger.info(`Starting OAuth process for provider linking: ${provider}, token: ${token}`);
 
-            if (typeof decodedUser !== 'string' && 'id' in decodedUser) {
-                logger.info(`Found user: ${decodedUser.id}`);
-            } else {
-                logger.warn(`Invalid token payload: ${JSON.stringify(decodedUser)}`);
-                res.status(401).json({ message: 'Invalid token payload' });
-                return;
-            }
-
-            // Store the token in the state parameter for use in the callback
-            logger.info(`Starting OAuth process for provider linking: ${provider}, token: ${token}`);
-
-            return oauthLinkingRateLimiter(req, res, () => passport.authenticate(provider)(req, res, next));
-
-        } catch (error) {
-            logger.error(`Error verifying token: ${error}`);
-            res.status(401).json({ message: 'Invalid or expired token' });
-            return;
-        }
+        return oauthLinkingRateLimiter(req, res, () => passport.authenticate(provider)(req, res, next));
 
     } else {
         logger.info(`Starting OAuth process for provider authentication: ${provider}`);
@@ -296,8 +278,7 @@ router.get("/:provider/callback", (req, res, next) => {
                 return res.status(error.status).send(error.message);
             } catch (e) {
                 logger.error(`Error in parsing error message: ${e}`);
-                next(e);
-                return res.status(500).send("Internal Server Error");
+                next({message: "Error in parsing error message in the OAuth callback", error: e });
             }
         } else if(user && 'id' in user) {
             logger.info(`Found user: ${user}`);
@@ -347,7 +328,7 @@ router.get("/:provider/callback", (req, res, next) => {
  *         description: An error occurred while unlinking the provider.
  */
 
-router.delete("/unlink/:provider", authenticateUser, async (req, res) => {
+router.delete("/unlink/:provider", authenticateUser, async (req, res, next) => {
     const provider = req.params.provider;
 
     if (!PROVIDERS.includes(provider)) {
@@ -398,9 +379,7 @@ router.delete("/unlink/:provider", authenticateUser, async (req, res) => {
         res.json({ message: `${provider} account unlinked successfully.` });
         return;
     } catch (error) {
-        logger.error(`Error unlinking provider: ${error}`);
-        res.status(500).json({ message: "An error occurred while unlinking the provider." });
-        return;
+        next({ message: "An error occurred while unlinking the provider.", error });
     }
 })
 

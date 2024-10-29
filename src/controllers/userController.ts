@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
-import { registerUserSchema, updateUserSchema } from '../models/userModel';
+import { registerUserSchema, updateUserSchema, validateUserRequest } from '../models/userModel';
+import { DEFAULT_ROLE } from '../utils/constants';
 
 /**
  * Retrieves all non-deleted users and their associated roles and providers.
@@ -40,10 +41,7 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
         res.json(users);
         return;
     } catch (error) {
-        logger.error(error);
-        next(error);
-        res.status(500).json({ message: 'Encountered some error while retrieving users' });
-        return;
+        next({ message: 'Encountered some error while retrieving users', error});
     }
 };
 
@@ -83,10 +81,7 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
         res.json(users);
         return;
     } catch (error) {
-        logger.error(error);
-        next(error);
-        res.status(500).json({ message: 'Encountered some error while retrieving all users' });
-        return;
+        next({ message: 'Encountered some error while retrieving all users', error});
     }
 };
 
@@ -97,14 +92,18 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  * 
+ * @throws {400} - If the user ID format is invalid
  * @throws {404} - If the user is not found
  * @throws {500} - If there is an error while retrieving the user
  */
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
+
+    const userId = validateUserRequest(id, null, null);
+
     try {
         const user = await prisma.users.findUnique({
-            where: { id, deletedAt: null }, // Ensure the user isn’t soft deleted
+            where: { id: userId, deletedAt: null }, // Ensure the user isn’t soft deleted
             select: { 
                 id: true,
                 username: true,
@@ -127,7 +126,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User with user ID '${id}' not found. The user may be soft-deleted.`)
+            logger.warn(`User with user ID '${userId}' not found. The user may be soft-deleted.`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -136,10 +135,11 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         res.json(user);
         return;
     } catch (error) {
-        logger.error(error);
-        next(error);
-        res.status(500).json({ message: `Encountered some error while retrieving user with the provided ID` });
-        return;
+        if ((error as any).status){
+            res.status((error as any).status).json({ message: (error as any).message });
+            return;
+        }
+        next({ message: 'Encountered some error while retrieving user with the provided ID', error});
     }
 };
 
@@ -150,14 +150,18 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  * 
+ * @throws {400} - If the user ID format is invalid
  * @throws {404} - If the user is not found
  * @throws {500} - If there is an error while retrieving the user
  */
 export const getUserByIdIncludingDeleted = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
+
+    const userId = validateUserRequest(id, null, null);
+
     try {
         const user = await prisma.users.findUnique({
-            where: { id },
+            where: { id: userId },
             select: { 
                 id: true,
                 username: true,
@@ -180,7 +184,7 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
         });
 
         if (!user) {
-            logger.warn(`User with user ID '${id}' not found`)
+            logger.warn(`User with user ID '${userId}' not found`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -189,10 +193,11 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
         res.json(user);
         return;
     } catch (error) {
-        logger.error(error);
-        next(error);
-        res.status(500).json({ message: `Encountered some error while retrieving user with the provided ID.` });
-        return;
+        if ((error as any).status){
+            res.status((error as any).status).json({ message: (error as any).message });
+            return;
+        }
+        next({ message: 'Encountered some error while retrieving user with the provided ID', error});
     }
 };
 
@@ -204,27 +209,34 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
  * @param {NextFunction} next - The next function in the middleware chain
  *
  * @throws {400} - If the request body is invalid
+ * @throws {404} - If the provided role is not found
+ * @throws {409} - If the user already exists
  * @throws {500} - If an error occurs while creating the user
  */
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
-    const parseResult = registerUserSchema.safeParse(req.body);
 
-    if (!parseResult.success) {
-        logger.warn("User creation failed. Invalid request body. \nError: " + parseResult.error.errors[0].message);
-        res.status(400).json({ message: parseResult.error.errors[0].message });
-        return;
-    }
-
-    const { email, username, password, role_name } = parseResult.data;
+    const { email, username, password, role_name } = validateUserRequest(null, req.body, registerUserSchema);
 
     try {
+        // Check if the user already exists
+        const user = await prisma.users.findUnique({ where: { email } });
+
+        if(user){
+            logger.warn("User creation failed. User already exists with email address: " + email);
+            res.status(409).json({ message: "User already exists with provided email address." });
+            return;
+        }
 
         // Check if the role exists
         const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
         if (!role) {
+            if (role_name === DEFAULT_ROLE) {
+                throw new Error("Default role '" + role_name + "' not found.");
+            }
+
             logger.warn(`User creation failed. Role '${role_name}' does not exist.`);
-            res.status(400).json({ message: 'Role does not exist' });
+            res.status(404).json({ message: 'Role does not exist' });
             return;
         }
 
@@ -251,7 +263,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         });
 
         // Connect the role to the user
-        if (role?.id) {
+        if (role.id) {
             await prisma.user_role.create({
                 data: {
                     userId: newUser.id,
@@ -267,17 +279,11 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         res.status(201).json(newUser);
         return;
     } catch (error) {
-        if ((error as any).code === 'P2002') {
-            // Handle unique constraint violations (e.g., email/username already exists)
-            logger.warn(`User creation failed. Email already exists.`);
-            res.status(400).json({ message: 'Email already exists' });
-            return;
-        } else {
-            logger.error(error);
-            next(error);
-            res.status(500).json({ message: 'Encountered some error while creating user' });
+        if ((error as any).status){
+            res.status((error as any).status).json({ message: (error as any).message });
             return;
         }
+        next({ message: 'Encountered some error while creating user', error});
     }
 };
 
@@ -288,29 +294,29 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  *
- * @throws {400} - If at least one field is not provided in the request body
+ * @throws {400} - If the request body is invalid or the user ID format is invalid
  * @throws {403} - If the requesting user is not an admin and is trying to update a user other than themselves
- * @throws {404} - If the user with the provided ID does not exist
+ * @throws {404} - If the user with the provided ID or the provided role does not exist
  * @throws {500} - If an error occurs while updating the user
  */
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const id_of_user_to_update = id;
-    
-    const parseResult = updateUserSchema.safeParse(req.body);
 
-    if (!parseResult.success) {
-        logger.warn("User update failed. Invalid request body. \nError: " + parseResult.error.errors[0].message);
-        res.status(400).json({ message: parseResult.error.errors[0].message });
-        return;
-    }
-
-    const { email, username, password, role_name } = parseResult.data;
+    const { email, username, password, role_name } = validateUserRequest(id, req.body, updateUserSchema);
 
     const authenticatedUser = req.user as any;
     const user = await prisma.users.findUnique({ where: { id: authenticatedUser.id } });
 
     try {
+        // Check if the user exists
+        const userToUpdate = await prisma.users.findUnique({ where: { id } });
+
+        if (!userToUpdate) {
+            logger.warn(`User update failed. User with id '${id}' not found.`);
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
         const userUpdateData: any = {};
 
         if(username){
@@ -322,17 +328,17 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         }
 
         if(password){
-            if (id_of_user_to_update === user?.id) {
+            if (id === user?.id) {
                 userUpdateData.password = await hashPassword(password);
-                logger.info(`User with id '${id_of_user_to_update}' is updating their own password.`);
+                logger.info(`User with id '${id}' is updating their own password.`);
 
-                // Check if the authenticated user is an admin
+            // Check if the authenticated user is an admin
             } else if(authenticatedUser.roles.every((role: any) => role.role.name === 'admin')) {
                 userUpdateData.password = await hashPassword(password);
-                logger.info(`User with id '${authenticatedUser.id}' is an admin and is updating the password of user with id '${id_of_user_to_update}'.`);
+                logger.info(`User with id '${authenticatedUser.id}' is an admin and is updating the password of user with id '${id}'.`);
 
             } else {
-                logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${authenticatedUser.id}' is trying to change the password of user with id '${id_of_user_to_update}'.`);
+                logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${authenticatedUser.id}' is trying to change the password of user with id '${id}'.`);
                 res.status(403).json({ message: 'You do not have permission to update this user. You can only change your own password. Please contact an admin for additional help.' });
                 return;
             }
@@ -343,15 +349,18 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
             if (!role) {
+                if (role_name === DEFAULT_ROLE) {
+                    throw new Error("Default role '" + role_name + "' not found.");
+                }
                 logger.warn(`User update failed. Role '${role_name}' does not exist.`);
-                res.status(400).json({ message: 'Role does not exist' });
+                res.status(404).json({ message: 'Role does not exist' });
                 return;
             }
 
             //Check if the user is already connected to a role
             const userRole = await prisma.user_role.findFirst({
                 where: {
-                    userId: id_of_user_to_update,
+                    userId: id,
                     roleId: role.id
                 }
             });
@@ -359,10 +368,10 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             if (userRole) {
                 userUpdateData.roleId = role.id; // Update the role
 
-            } else if (role?.id) {
+            } else if (role.id) {
                 await prisma.user_role.create({
                     data: {
-                        userId: id_of_user_to_update,
+                        userId: id,
                         roleId: role.id
                     }
                 });
@@ -370,7 +379,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         }
 
         const updatedUser = await prisma.users.update({
-            where: { id: id_of_user_to_update },
+            where: { id },
             data: userUpdateData,
             select: { 
                 id: true,
@@ -392,17 +401,11 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         res.json(updatedUser);
         return;
     } catch (error) {
-        if ((error as any).code === 'P2025') {
-            // Record not found
-            logger.warn(`User update failed. User with id '${id}' not found.`);
-            res.status(404).json({ message: 'User not found' });
-            return;
-        } else {
-            logger.error(error);
-            next(error);
-            res.status(500).json({ message: 'Encountered some error while updating user' });
+        if ((error as any).status){
+            res.status((error as any).status).json({ message: (error as any).message });
             return;
         }
+        next({ message: 'Encountered some error while updating user', error });
     }
 };
 
@@ -413,7 +416,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  *
- * @throws {400} - If the user is already deleted
+ * @throws {400} - If the user ID format is invalid or the user is already deleted
  * @throws {404} - If the user is not found
  * @throws {500} - If there is an error while deleting the user
  */
@@ -422,32 +425,36 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 
     try {
 
+        const userId = validateUserRequest(id, null, null);
+
         const user = await prisma.users.findUnique({
-            where: { id }
+            where: { id: userId }
         });
 
         if (!user) {
-            logger.warn(`User delete failed. User with id '${id}' not found.`);
+            logger.warn(`User delete failed. User with id '${userId}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else if (user.deletedAt) {
-            logger.warn(`User delete failed. User with id '${id}' is already deleted.`);
+            logger.warn(`User delete failed. User with id '${userId}' is already deleted.`);
             res.status(400).json({ message: 'User is already deleted' });
             return;
         }
 
         await prisma.users.update({
-            where: { id },
+            where: { id: userId },
             data: { deletedAt: new Date() } // Mark user as deleted by setting the timestamp
         });
 
-        logger.info(`User with id '${id}' deleted successfully`);
+        logger.info(`User with id '${userId}' deleted successfully`);
         res.json({ message: 'User deleted successfully' });
         return;
     } catch (error) {
-        logger.error(error);
-        res.status(500).json({ message: 'Encountered some error while deleting user' });
-        return;
+        if ((error as any).status){
+            res.status((error as any).status).json({ message: (error as any).message });
+            return;
+        }
+        next({ message: 'Encountered some error while deleting user', error });
     }
 };
 
@@ -458,7 +465,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  * 
- * @throws {400} - If the user is not soft-deleted
+ * @throws {400} - If the user ID format is invalid or the user is not soft-deleted
  * @throws {404} - If the user is not found
  * @throws {500} - If there is an error while restoring the user
  */
@@ -466,17 +473,19 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
     const { id } = req.params;
 
     try {
+        const userId = validateUserRequest(id, null, null);
+
         // Ensure the user is currently soft-deleted
         const user = await prisma.users.findUnique({
-            where: { id }
+            where: { id: userId }
         });
 
         if (!user) {
-            logger.warn(`User restore failed. User with id '${id}' not found.`);
+            logger.warn(`User restore failed. User with id '${userId}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else if (!user.deletedAt) {
-            logger.warn(`User restore failed. User with id '${id}' is not soft-deleted.`);
+            logger.warn(`User restore failed. User with id '${userId}' is not soft-deleted.`);
             res.status(400).json({ message: 'User is not soft-deleted' });
             return;
         }
@@ -487,14 +496,15 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
             data: { deletedAt: null }
         });
 
-        logger.info(`User with id '${id}' restored successfully`);
+        logger.info(`User with id '${userId}' restored successfully`);
         res.json({ message: 'User restored successfully' });
         return;
     } catch (error) {
-        logger.error(error);
-        next(error);
-        res.status(500).json({ message: 'Encountered some error while restoring user' });
-        return;
+        if ((error as any).status){
+            res.status((error as any).status).json({ message: (error as any).message });
+            return;
+        }
+        next({ message: 'Encountered some error while restoring user', error });
     }
 };
 
@@ -505,6 +515,7 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
  * @param {Response} res - The response object
  * @param {NextFunction} next - The next function in the middleware chain
  *
+ * @throws {400} - If the user ID format is invalid
  * @throws {404} - If the user is not found
  * @throws {500} - If there is an error while permanently deleting the user
  */
@@ -512,12 +523,14 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
     const { id } = req.params;
 
     try {
+        const userId = validateUserRequest(id, null, null);
+
         const user = await prisma.users.findUnique({
-            where: { id },
+            where: { id: userId },
         });
 
         if (!user) {
-            logger.warn(`User permanent deletion failed. User with id '${id}' not found.`);
+            logger.warn(`User permanent deletion failed. User with id '${userId}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -537,14 +550,15 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
             where: { id },
         });
 
-        logger.info(`User with id '${id}' permanently deleted successfully`);
+        logger.info(`User with id '${userId}' permanently deleted successfully`);
         res.json({ message: 'User permanently deleted successfully' });
         return;
     } catch (error) {
-        logger.error(error);
-        next(error);
-        res.status(500).json({ message: 'Encountered some error while permanently deleting user' });
-        return;
+        if ((error as any).status){
+            res.status((error as any).status).json({ message: (error as any).message });
+            return;
+        }
+        next({ message: 'Encountered some error while permanently deleting user', error });
     }
 };
 
@@ -629,9 +643,6 @@ export const bulkPermanentlyDeleteUsers = async (req: Request, res: Response, ne
         res.json({ message: 'Users permanently deleted successfully' });
         return;
     } catch (error) {
-        logger.error(error);
-        next(error);
-        res.status(500).json({ message: 'Encountered some error while permanently deleting users' });
-        return;
+        next({ message: 'Encountered some error while permanently deleting users', error });
     }
 };
