@@ -50,7 +50,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
             if (!user) {
                 logger.warn("User with ID " + user_id + " not found: ");
-                return res.status(403).json({ message: 'User not found' });
+                return res.status(404).json({ message: 'User not found' });
             }
 
             (req as any).user = user;

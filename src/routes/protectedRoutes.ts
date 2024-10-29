@@ -5,6 +5,7 @@ import userRoutes from "./userRoutes";
 import roleRoutes from "./roleRoutes";
 
 import logger from "../services/logger";
+import { useRateLimitMiddleware } from "../middlewares/rateLimitMiddleware";
 
 const router = Router();
 
@@ -13,8 +14,8 @@ router.use((req, res, next) => {
     next();
 });
 
-router.use("/users", userRoutes);
-router.use("/roles", roleRoutes);
+router.use("/users", useRateLimitMiddleware, userRoutes);
+router.use("/roles", useRateLimitMiddleware, roleRoutes);
 
 /**
  * @swagger

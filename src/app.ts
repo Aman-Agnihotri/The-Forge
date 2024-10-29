@@ -5,7 +5,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import protectedRoutes from "./routes/protectedRoutes";
 
-import { ipRateLimiter, useRateLimitMiddleware } from "./middlewares/rateLimitMiddleware";
+import { ipRateLimiter } from "./middlewares/rateLimitMiddleware";
 import errorHandler from "./middlewares/errorHandler";
 import { authenticateUser } from "./middlewares/authMiddleware";
 
@@ -26,7 +26,7 @@ app.use(cors());
 app.use(ipRateLimiter);
 
 app.use(API_PATH + "/auth", authRoutes);
-app.use(API_PATH + "/api", authenticateUser, useRateLimitMiddleware, protectedRoutes);
+app.use(API_PATH + "/api", authenticateUser, protectedRoutes);
 
 app.use(errorHandler);
 

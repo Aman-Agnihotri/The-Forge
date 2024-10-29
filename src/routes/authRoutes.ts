@@ -224,7 +224,13 @@ router.get("/:provider", (req, res, next) => {
 
     logger.info(`Processing OAuth request for provider: ${provider}, isLinking: ${isLinking}`);
 
-    if (isLinking && token) {
+    if (isLinking) {
+        if (!token) {
+            logger.warn(`Missing token in request for provider linking: ${provider}`);
+            res.status(400).json({ message: 'Missing token' });
+            return;
+        }
+
         try {
             const decodedUser = verifyToken(token);
             logger.info(`Token payload: ${token}`);

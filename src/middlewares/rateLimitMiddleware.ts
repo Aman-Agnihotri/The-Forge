@@ -204,7 +204,7 @@ export const useRateLimitMiddleware = async (req: Request, res: Response, next: 
 
     const userID = user.id;
 
-    // Determine the user role (default to 'guest' if not specified)
+    // Determine the user role (default to 'user' if not specified)
     const role = user.roles.reduce((highestRole: keyof typeof rolePriority, currentRole: { role: { name: keyof typeof rolePriority } }) => {
         return rolePriority[currentRole.role.name] > rolePriority[highestRole] ? currentRole.role.name : highestRole;
     }, 'user');
