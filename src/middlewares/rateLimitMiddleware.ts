@@ -42,12 +42,12 @@ export const rateLimitConfig = {
 export const createIpRateLimiter = (config = rateLimitConfig.ip) => rateLimit({
     windowMs: config.windowMs,
     max: config.max,
-    message: `Too many requests from this IP, please try again after ${config.windowMs / 1000} seconds.`,
+    message: "Too many requests from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     handler: (req, res, next, options) => {
         logger.warn(`IP rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).send(options.message);
+        res.status(options.statusCode).json({ message: options.message });
     }
 });
 
@@ -65,11 +65,11 @@ export const ipRateLimiter = createIpRateLimiter();
 export const createLoginRateLimiter = (config = rateLimitConfig.login) => rateLimit({
     windowMs: config.windowMs,
     max: config.max,
-    message: 'Too many login attempts from this IP, please try again after ${config.windowMs / 1000} seconds.',
+    message: "Too many login attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
     handler: (req, res, next, options) => {
         logger.warn(`Login rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).send(options.message);
+        res.status(options.statusCode).json({ message: options.message });
     }
 });
 
@@ -89,11 +89,11 @@ export const loginRateLimiter = createLoginRateLimiter();
 export const createRegistrationRateLimiter = (config = rateLimitConfig.registration) => rateLimit({
     windowMs: config.windowMs,
     max: config.max,
-    message: 'Too many registration attempts from this IP, please try again after ${config.windowMs / 1000} seconds.',
+    message: "Too many registration attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
     handler: (req, res, next, options) => {
         logger.warn(`Registration rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).send(options.message);
+        res.status(options.statusCode).json({ message: options.message });
     }
 });
 
@@ -113,11 +113,11 @@ export const registrationRateLimiter = createRegistrationRateLimiter();
 export const createTokenRefreshRateLimiter = (config = rateLimitConfig.token_refresh) => rateLimit({
     windowMs: config.windowMs,
     max: config.max,
-    message: 'Too many token refresh attempts from this IP, please try again after ${config.windowMs / 1000} seconds.',
+    message: "Too many token refresh attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
     handler: (req, res, next, options) => {
         logger.warn(`Token refresh rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).send(options.message);
+        res.status(options.statusCode).json({ message: options.message });
     }
 });
 
@@ -138,10 +138,10 @@ export const createOauthLoginRateLimiter = (config = rateLimitConfig.oauth) => r
     windowMs: config.windowMs,
     max: config.max,
     standardHeaders: true,
-    message: 'Too many login attempts from this IP, please try again after ${config.windowMs / 1000} seconds.',
+    message: "Too many login attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     handler: (req, res, next, options) => {
         logger.warn(`OAuth login rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).send(options.message);
+        res.status(options.statusCode).json({ message: options.message });
     }
 });
 
@@ -162,10 +162,10 @@ export const createOauthLinkingRateLimiter = (config = rateLimitConfig.oauth) =>
     windowMs: config.windowMs,
     max: config.max,
     standardHeaders: true,
-    message: 'Too many OAuth linking attempts from this IP, please try again after ${config.windowMs / 1000} seconds.',
+    message: "Too many OAuth linking attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     handler: (req, res, next, options) => {
         logger.warn(`OAuth linking rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).send(options.message);
+        res.status(options.statusCode).json({ message: options.message });
     }
 });
 
