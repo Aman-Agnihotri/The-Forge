@@ -3,10 +3,10 @@ import { prisma } from "../config/prisma";
 import passport from "../controllers/passportController";
 import { PROVIDERS, HOST_UI_URL } from "../utils/constants";
 import { generateToken, verifyToken } from "../utils/jwt";
-import { loginUser, registerUser } from "../controllers/authController";
+import { loginUser, registerUser, refreshToken } from "../controllers/authController";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import logger from "../services/logger";
-import { loginRateLimiter, registrationRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter } from "../middlewares/rateLimitMiddleware";
+import { loginRateLimiter, registrationRateLimiter, tokenRefreshRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter } from "../middlewares/rateLimitMiddleware";
 
 const router = Router();
 
@@ -41,6 +41,8 @@ const router = Router();
  *               type: object
  *               properties:
  *                 token:
+ *                   type: string
+ *                 refreshToken:
  *                   type: string
  *                 user:
  *                   type: object
@@ -100,6 +102,8 @@ router.post("/login", loginRateLimiter, (req, res, next) => {
  *               properties:
  *                 token:
  *                   type: string
+ *                 refreshToken:
+ *                   type: string
  *                 user:
  *                   type: object
  *                   properties:
@@ -120,6 +124,54 @@ router.post("/login", loginRateLimiter, (req, res, next) => {
 router.post("/register", registrationRateLimiter, (req, res, next) => {
     logger.info("Registration attempt");
     registerUser(req, res, next);
+});
+
+/**
+ * @swagger
+ * /auth/refresh:
+ *   post:
+ *     summary: Refresh an existing JWT token.
+ *     description: Refreshes an existing JWT token and returns a new one.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       description: Refresh token to acquire a new JWT token.
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token.
+ *     responses:
+ *       200:
+ *         description: JWT token successfully refreshed.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Missing refresh token.
+ *       401:
+ *         description: Invalid or malformed refresh token.
+ *       403:
+ *         description: User associated with the refresh token not found.
+ *       429:
+ *         description: Too many token refresh attempts (rate-limited).
+ *       500:
+ *         description: Internal server error.
+ */
+router.post("/refresh", tokenRefreshRateLimiter, (req, res, next) => {
+    logger.info("Token refresh attempt");
+    refreshToken(req, res, next);
 });
 
 //OAuth authentication routes (works for both login and linking). Just add ?linking=true to the URL for linking.

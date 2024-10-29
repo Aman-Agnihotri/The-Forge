@@ -52,10 +52,15 @@ router.get("/", async (req: any, res: any, next: any) => {
         // Access the user object attached in the middleware
         const user = req.user;
 
-        const userinfo = await prisma.users.findUnique({ where: { id: user.id } });
+        const userinfo = await prisma.users.findUnique({ where: { id: user.id },
+            select: {
+                id: true,
+                username: true
+            } 
+        });
 
         logger.info(`User '${userinfo?.username}' accessed the protected route`);
-        res.json({ message: `Welcome to the secret club, ${userinfo?.username}!`, user });
+        res.json({ message: `Welcome to the secret club, ${userinfo?.username}!`, userinfo });
     } catch (error) {
         logger.error(`Error accessing protected route: ${(error as any).message}`);
         next(error);

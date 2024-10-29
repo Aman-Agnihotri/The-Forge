@@ -38,7 +38,9 @@ export const DATABASE_PROVIDER = getEnvVar('DATABASE_PROVIDER', 'postgresql');
 export const DATABASE_URL = getEnvVar('DATABASE_URL');
 
 export const JWT_SECRET = getEnvVar('JWT_SECRET');
-export const JWT_EXPIRATION = getEnvVar('JWT_EXPIRATION', '12h');
+export const JWT_EXPIRATION = getEnvVar('JWT_EXPIRATION', '15m');
+export const REFRESH_JWT_SECRET = getEnvVar('REFRESH_JWT_SECRET');
+export const REFRESH_JWT_EXPIRATION = getEnvVar('REFRESH_JWT_EXPIRATION', '7d');
 
 export const clientIds = {
     google: getEnvVar('GOOGLE_CLIENT_ID'),

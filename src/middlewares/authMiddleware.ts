@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyToken } from "../utils/jwt";
+import { verifyToken, TokenExpiredError, JsonWebTokenError } from "../utils/jwt";
 import { prisma } from "../config/prisma";
 import logger from "../services/logger";
 
@@ -28,7 +28,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
                 return res.status(401).json({ message: 'Invalid token payload' });
             }
 
-            const user = await prisma.users.findUnique({ where: { id: user_id },
+            const user = await prisma.users.findUnique({ where: { id: user_id, deletedAt: null },
                 select: { 
                     id: true,
                     username: true,
@@ -50,14 +50,23 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
             if (!user) {
                 logger.warn("User with ID " + user_id + " not found: ");
-                return res.status(401).json({ message: 'User not found' });
+                return res.status(403).json({ message: 'User not found' });
             }
 
             (req as any).user = user;
             return next();
         } catch (error) {
-            logger.warn("Token verification error: " + error);
-            return res.status(401).json({ message: "Invalid or expired authentication token" });
+            if (error instanceof TokenExpiredError) {
+                logger.warn("Token expired: " + error.message);
+                return res.status(401).json({ message: "Token has expired" });
+            } else if (error instanceof JsonWebTokenError) {
+                logger.warn("Malformed token: " + error.message);
+                return res.status(401).json({ message: "Malformed token" });
+            } else {
+                logger.error("Token verification error: " + error);
+                next(error);
+                return res.status(500).json({ message: "An error occurred while token authentication." });
+            }
         }
     }
 

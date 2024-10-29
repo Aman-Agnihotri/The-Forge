@@ -17,6 +17,10 @@ export const rateLimitConfig = {
         windowMs: 15 * 60 * 1000, // 15 minutes
         max: 5                    // 5 requests per 15 minutes
     },
+    token_refresh: {
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: 3                    // 3 requests per 15 minutes
+    },
     oauth: {
         windowMs: 15 * 60 * 1000, // 15 minutes
         max: 5                    // 5 requests per 15 minutes
@@ -95,6 +99,30 @@ export const createRegistrationRateLimiter = (config = rateLimitConfig.registrat
 
 // Export the registration rate limiter
 export const registrationRateLimiter = createRegistrationRateLimiter();
+
+/**
+ * Creates a token refresh rate limiter based on the given configuration.
+ * 
+ * @param {Object} [config=rateLimitConfig.token_refresh] - The configuration object for the rate limiter.
+ * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
+ * @property {number} config.max - The maximum number of token refresh attempts allowed in the time frame.
+ * @property {string} config.message - The message to return when the rate limit is exceeded.
+ * 
+ * @returns {express.RequestHandler} The token refresh rate limiter middleware.
+ */
+export const createTokenRefreshRateLimiter = (config = rateLimitConfig.token_refresh) => rateLimit({
+    windowMs: config.windowMs,
+    max: config.max,
+    message: 'Too many token refresh attempts from this IP, please try again after ${config.windowMs / 1000} seconds.',
+    standardHeaders: true,
+    handler: (req, res, next, options) => {
+        logger.warn(`Token refresh rate limit exceeded for IP: ${req.ip}`);
+        res.status(options.statusCode).send(options.message);
+    }
+});
+
+// Export the token refresh rate limiter
+export const tokenRefreshRateLimiter = createTokenRefreshRateLimiter();
 
 /**
  * Creates an OAuth login rate limiter based on the given configuration.
