@@ -2,51 +2,23 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import rateLimit from "express-rate-limit";
 import { Request, Response, NextFunction } from "express";
 import logger from "../services/logger";
-import { rateLimitBypassIps } from "../utils/constants";
-
-// Configuration object that can be modified for testing
-export const rateLimitConfig = {
-    ip: {
-        windowMs: 10 * 60 * 1000, // 10 minutes
-        max: 100                  // 100 requests per 10 minutes
-    },
-    login: {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5                    // 5 requests per 15 minutes
-    },
-    registration: {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5                    // 5 requests per 15 minutes
-    },
-    token_refresh: {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 3                    // 3 requests per 15 minutes
-    },
-    oauth: {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 5                    // 5 requests per 15 minutes
-    },
-    roles: {
-        admin: { points: 5000, duration: 60 * 60 }, // 5000 requests per hour
-        user: { points: 500, duration: 60 * 60 }    // 500 requests per hour
-    }
-};
+import { rateLimitBypassIp, rateLimitConfig } from "../utils/constants";
 
 /**
  * Creates an IP rate limiter based on the given configuration.
  * @param {Object} [config=rateLimitConfig.ip] - The configuration object to use for the rate limiter.
  * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
- * @property {number} config.max - The maximum number of requests allowed in the time frame.
+ * @property {number} config.limit - The maximum number of requests allowed in the time frame.
  * @property {string} config.message - The message to return when the rate limit is exceeded.
  * @returns {express.RequestHandler} The IP rate limiter middleware.
  */
 export const createIpRateLimiter = (config = rateLimitConfig.ip) => rateLimit({
     windowMs: config.windowMs,
-    max: config.max,
+    limit: config.limit,
     message: "Too many requests from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
+    skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`IP rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -60,16 +32,16 @@ export const ipRateLimiter = createIpRateLimiter();
  * Creates a login rate limiter based on the given configuration.
  * @param {Object} [config=rateLimitConfig.login] - The configuration object for the rate limiter.
  * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
- * @property {number} config.max - The maximum number of login attempts allowed in the time frame.
+ * @property {number} config.limit - The maximum number of login attempts allowed in the time frame.
  * @property {string} config.message - The message to return when the rate limit is exceeded.
  * @returns {express.RequestHandler} The login rate limiter middleware.
  */
 export const createLoginRateLimiter = (config = rateLimitConfig.login) => rateLimit({
     windowMs: config.windowMs,
-    max: config.max,
+    limit: config.limit,
     message: "Too many login attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
-    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
+    skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`Login rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -84,17 +56,17 @@ export const loginRateLimiter = createLoginRateLimiter();
  * 
  * @param {Object} [config=rateLimitConfig.login] - The configuration object for the rate limiter.
  * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
- * @property {number} config.max - The maximum number of registration attempts allowed in the time frame.
+ * @property {number} config.limit - The maximum number of registration attempts allowed in the time frame.
  * @property {string} config.message - The message to return when the rate limit is exceeded.
  * 
  * @returns {express.RequestHandler} The registration rate limiter middleware.
  */
 export const createRegistrationRateLimiter = (config = rateLimitConfig.registration) => rateLimit({
     windowMs: config.windowMs,
-    max: config.max,
+    limit: config.limit,
     message: "Too many registration attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
-    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
+    skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`Registration rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -109,17 +81,17 @@ export const registrationRateLimiter = createRegistrationRateLimiter();
  * 
  * @param {Object} [config=rateLimitConfig.token_refresh] - The configuration object for the rate limiter.
  * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
- * @property {number} config.max - The maximum number of token refresh attempts allowed in the time frame.
+ * @property {number} config.limit - The maximum number of token refresh attempts allowed in the time frame.
  * @property {string} config.message - The message to return when the rate limit is exceeded.
  * 
  * @returns {express.RequestHandler} The token refresh rate limiter middleware.
  */
 export const createTokenRefreshRateLimiter = (config = rateLimitConfig.token_refresh) => rateLimit({
     windowMs: config.windowMs,
-    max: config.max,
+    limit: config.limit,
     message: "Too many token refresh attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
-    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
+    skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`Token refresh rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -134,17 +106,17 @@ export const tokenRefreshRateLimiter = createTokenRefreshRateLimiter();
  * 
  * @param {Object} [config=rateLimitConfig.oauth] - The configuration object for the rate limiter.
  * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
- * @property {number} config.max - The maximum number of OAuth login attempts allowed in the time frame.
+ * @property {number} config.limit - The maximum number of OAuth login attempts allowed in the time frame.
  * @property {string} config.message - The message to return when the rate limit is exceeded.
  * 
  * @returns {express.RequestHandler} The OAuth login rate limiter middleware.
  */
 export const createOauthLoginRateLimiter = (config = rateLimitConfig.oauth) => rateLimit({
     windowMs: config.windowMs,
-    max: config.max,
+    limit: config.limit,
     standardHeaders: true,
     message: "Too many login attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
-    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
+    skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`OAuth login rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -159,17 +131,17 @@ export const oauthLoginRateLimiter = createOauthLoginRateLimiter();
  * 
  * @param {Object} [config=rateLimitConfig.oauth] - The configuration object for the rate limiter.
  * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
- * @property {number} config.max - The maximum number of OAuth linking attempts allowed in the time frame.
+ * @property {number} config.limit - The maximum number of OAuth linking attempts allowed in the time frame.
  * @property {string} config.message - The message to return when the rate limit is exceeded.
  * 
  * @returns {express.RequestHandler} The OAuth linking rate limiter middleware.
  */
 export const createOauthLinkingRateLimiter = (config = rateLimitConfig.oauth) => rateLimit({
     windowMs: config.windowMs,
-    max: config.max,
+    limit: config.limit,
     standardHeaders: true,
     message: "Too many OAuth linking attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
-    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
+    skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`OAuth linking rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -204,7 +176,7 @@ export const useRateLimitMiddleware = async (req: Request, res: Response, next: 
     const user = (req as any).user; // Access the authenticated user from the request
 
     // Check if the request IP is in the bypass list
-    if (rateLimitBypassIps.includes(req.ip as string)) {
+    if (rateLimitBypassIp.includes(req.ip as string)) {
         logger.info(`Rate limit bypass for IP: ${req.ip}`);
         return next();
     }

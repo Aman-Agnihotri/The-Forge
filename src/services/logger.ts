@@ -42,7 +42,7 @@ const rotatingStream = createRotatingWriteStream({
 
 // Pino configuration
 const pinoLogger = pino({
-    level: NODE_ENV === 'testing' ? 'silent' : LOG_LEVEL ?? 'info',
+    level: NODE_ENV === 'test' ? 'silent' : LOG_LEVEL ?? 'info',
     timestamp: pino.stdTimeFunctions.isoTime,
     transport: {
         targets: [
@@ -89,7 +89,7 @@ const errorFileTransport = new DailyRotateFile({
 
 // Winston configuration
 const winstonLogger = winston.createLogger({
-    level: NODE_ENV === 'testing' ? 'off' : LOG_LEVEL ?? 'info',
+    level: NODE_ENV === 'test' ? 'off' : LOG_LEVEL ?? 'info',
     format: combine(
         timestamp({ format: timestampFormat }),
         json(), // Use JSON format by default
@@ -110,7 +110,7 @@ const winstonLogger = winston.createLogger({
 });
 
 // If we're not in production, show human-readable output in the console
-if (NODE_ENV !== 'production') {
+if (NODE_ENV !== 'prod') {
     winstonLogger.add(new winston.transports.Console({
         format: winston.format.simple()
     }));

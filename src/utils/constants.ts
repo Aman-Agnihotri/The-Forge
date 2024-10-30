@@ -32,7 +32,12 @@ export const API_PATH = '/' + API_VERSION;
 
 export const HOST_API_URL = getEnvVar('HOST_API_URL', 'http://localhost:${PORT}') + API_PATH;
 export const HOST_UI_URL = getEnvVar('HOST_UI_URL');
-export const NODE_ENV = getEnvVar('NODE_ENV', 'development');
+export const NODE_ENV = getEnvVar('NODE_ENV');
+
+if (NODE_ENV !== 'test' && NODE_ENV !== 'dev' && NODE_ENV !== 'prod') {
+    console.error(`Invalid NODE_ENV: ${NODE_ENV}`);
+    throw new Error(`Invalid NODE_ENV: ${NODE_ENV}`);
+}
 
 export const DATABASE_PROVIDER = getEnvVar('DATABASE_PROVIDER', 'postgresql');
 export const DATABASE_URL = getEnvVar('DATABASE_URL');
@@ -74,6 +79,46 @@ export const LOG_LEVEL = getEnvVar('LOG_LEVEL', 'info');
 export const DEFAULT_ROLE="user";
 
 // Allowed IP addresses for rate limit bypass for testing
-export const rateLimitBypassIps = "244.128.248.221";
+export const rateLimitBypassIp = "244.128.248.221";
 
 export const testIP = "123.45.67.89";
+export const testUserIP = "217.137.153.227";
+export const testAdminIP = "198.15.177.9";
+
+const isTestEnv = NODE_ENV === "test";
+
+// Configuration object for rate limiting
+export const rateLimitConfig = {
+    ip: {
+        windowMs: isTestEnv? 1000 : 10 * 60 * 1000, // 10 minutes or 1 second in test environment
+        limit: isTestEnv? 60 : 1000                 // 1000 requests per 10 minutes or 60 requests per second in test environment 
+    },
+    login: {
+        windowMs: isTestEnv? 1000 : 15 * 60 * 1000, // 15 minutes or 1 second in test environment
+        limit: isTestEnv? 3 : 5                     // 5 requests per 15 minutes or 3 requests per second in test environment
+    },
+    registration: {
+        windowMs: isTestEnv? 1000 : 15 * 60 * 1000, // 15 minutes or 1 second in test environment
+        limit: isTestEnv? 3 : 5                     // 5 requests per 15 minutes or 3 requests per second in test environment
+    },
+    token_refresh: {
+        windowMs: isTestEnv? 1000 : 15 * 60 * 1000, // 15 minutes or 1 second in test environment
+        limit: 3                                    // 3 requests per 15 minutes or 3 requests per second in test environment
+    },
+    oauth: {
+        windowMs: isTestEnv? 1000 : 15 * 60 * 1000, // 15 minutes or 1 second in test environment
+        limit: isTestEnv? 3 : 5                     // 5 requests per 15 minutes or 3 requests per second in test environment
+    },
+    roles: {
+        admin: { 
+            points: isTestEnv? 20 : 5000, 
+            duration: isTestEnv? 1 : 60 * 60
+        }, // 5000 requests per hour or 20 requests per second in test environment
+        user: { 
+            points: isTestEnv? 10 : 500,
+            duration: isTestEnv? 1 : 60 * 60
+        }  // 500 requests per hour or 10 requests per second in test environment
+    }
+};
+
+export const getRateLimitConfig = () => rateLimitConfig;

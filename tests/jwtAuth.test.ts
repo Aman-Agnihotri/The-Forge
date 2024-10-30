@@ -1,11 +1,7 @@
 import request from 'supertest';
 import { app, server } from '../src/app';
 import { prisma } from '../src/config/prisma';
-import { rateLimitBypassIps } from '../src/utils/constants';
-
-afterAll((done) => {
-	server.close(done);
-});
+import { rateLimitBypassIp } from '../src/utils/constants';
 
 //Helper functions to send requests
 const sendPostRequest = async (endpoint: string, body: any, token: string | null) => {
@@ -13,7 +9,7 @@ const sendPostRequest = async (endpoint: string, body: any, token: string | null
 		.post(endpoint)
 		.send(body)
 		.set('Authorization', token ? `Bearer ${token}` : '')
-		.set('X-Forwarded-For', rateLimitBypassIps); // Simulate same IP
+		.set('X-Forwarded-For', rateLimitBypassIp); // Simulate same IP
 	return res;
 }
 
@@ -21,11 +17,15 @@ const sendGetRequest = async (endpoint: string, token: string | null) => {
 	const res = await request(app)
 		.get(endpoint)
 		.set('Authorization', token ? `Bearer ${token}` : '')
-		.set('X-Forwarded-For', rateLimitBypassIps); // Simulate same IP
+		.set('X-Forwarded-For', rateLimitBypassIp); // Simulate same IP
 	return res;
 }
 
 describe("JWT Authentication Tests", () => {
+
+	afterAll(async () => {
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+    });
 
 	// User Registration Tests
 	describe("User Registration", () => {
@@ -53,28 +53,6 @@ describe("JWT Authentication Tests", () => {
 			expect(res.body).toMatchObject({ user: expect.any(Object) });
 		});
 
-		test("Register with invalid email format", async () => {
-			const res = await sendPostRequest("/v1/auth/register", {
-				username: "invalidEmailUser",
-				email: "notAnEmail",
-				password: "ValidPass123!"
-			}, null);
-
-			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
-		});
-
-		test("Register with weak password", async () => {
-			const res = await sendPostRequest("/v1/auth/register", {
-				username: "weakPassUser",
-				email: "user@example.com",
-				password: "12345"
-			}, null);
-
-			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
-		});
-
 		test("Register with duplicate email", async () => {
 			const res =await sendPostRequest("/v1/auth/register", {
 				username: "duplicateEmailUser",
@@ -87,26 +65,6 @@ describe("JWT Authentication Tests", () => {
 		});
 
 		// Additional Validation Tests
-		test("Register with missing email", async () => {
-			const res = await sendPostRequest("/v1/auth/register", {
-				username: `newuser`,
-				password: `ValidPass!`
-			}, null);
-
-			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
-		});
-
-		test("Register with missing password", async () => {
-			const res = await sendPostRequest("/v1/auth/register", {
-				username: `newuser`,
-				email: `newuser@example.com`
-			}, null);
-
-			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
-		});
-
 		test("Register with missing username", async () => {
 			const res = await sendPostRequest("/v1/auth/register", {
 				email: `newuser@example.com`,
@@ -155,6 +113,81 @@ describe("JWT Authentication Tests", () => {
 				username: "invalid@username",
 				email: "user@example.com",
 				password: "ValidPass123!"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Register with missing email", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: `newuser`,
+				password: `ValidPass!`
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Register with empty email", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: `newuser`,
+				email: "",
+				password: "ValidPass123!"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Register with invalid email format", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: "invalidEmailUser",
+				email: "notAnEmail",
+				password: "ValidPass123!"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Register with missing password", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: `newuser`,
+				email: `newuser@example.com`
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Register with empty password", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: "emptyPassUser",
+				email: "user@example.com",
+				password: ""
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Register with weak password", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: "weakPassUser",
+				email: "user@example.com",
+				password: "12345"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Register with long password", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: "longPassUser",
+				email: "user@example.com",
+				password: "a".repeat(31)
 			}, null);
 
 			expect(res.statusCode).toBe(400);
@@ -220,18 +253,29 @@ describe("JWT Authentication Tests", () => {
 			expect(res.body).toMatchObject({ message: expect.any(String) });
 		});
 
-		// Aditional Validation Tests
-		test("Login with missing password", async () => {
+		test("Login with non-existent email", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
-				email: "user@usermail.com"
+				email: "nonExistentEmail@usermail.com",
+				password: "user1234"
+			}, null);
+
+			expect(res.statusCode).toBe(404);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		// Aditional Validation Tests
+		test("Login with missing email", async () => {
+			const res = await sendPostRequest("/v1/auth/login", {
+				password: "user1234"
 			}, null);
 
 			expect(res.statusCode).toBe(400);
 			expect(res.body).toMatchObject({ message: expect.any(String) });
 		});
 
-		test("Login with missing email", async () => {
+		test("Login with empty email", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
+				email: "",
 				password: "user1234"
 			}, null);
 
@@ -249,10 +293,39 @@ describe("JWT Authentication Tests", () => {
 			expect(res.body).toMatchObject({ message: expect.any(String) });
 		});
 
-		test("Login with short password", async () => {
+		test("Login with missing password", async () => {
+			const res = await sendPostRequest("/v1/auth/login", {
+				email: "user@usermail.com"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Login with empty password", async () => {
+			const res = await sendPostRequest("/v1/auth/login", {
+				email: "user@usermail.com",
+				password: ""
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Login with weak password", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
 				email: "user@usermail.com",
 				password: "1234"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: expect.any(String) });
+		});
+
+		test("Login with long password", async () => {
+			const res = await sendPostRequest("/v1/auth/login", {
+				email: "user@usermail.com",
+				password: "a".repeat(31)
 			}, null);
 
 			expect(res.statusCode).toBe(400);
@@ -269,14 +342,14 @@ describe("JWT Authentication Tests", () => {
 			const res = await sendGetRequest("/v1/api/", expiredToken);
 
 			expect(res.statusCode).toBe(401);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Token has expired" });
 		});
 
 		test("Access without token", async () => {
 			const res = await sendGetRequest("/v1/api/", null);
 
 			expect(res.statusCode).toBe(401);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Unauthorized, please log in" });
 		});
 
 		test("Invalid (or malformed) token access", async () => {
@@ -285,7 +358,7 @@ describe("JWT Authentication Tests", () => {
 			const res = await sendGetRequest("/v1/api/", invalidToken);
 
 			expect(res.statusCode).toBe(401);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Malformed token" });
 		});
 	});
 

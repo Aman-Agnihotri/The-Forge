@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "nodemon src/app.ts | pino-pretty",
     "start": "ts-node src/app.ts | pino-pretty",
-    "test": "NODE_ENV=testing jest --runInBand",
-    "test:watch": "NODE_ENV=testing jest --watch"
+    "test": "NODE_ENV=test jest --runInBand",
+    "test:watch": "NODE_ENV=test jest --watch"
   },
   "keywords": [],
   "author": "Aman Agnihotri",

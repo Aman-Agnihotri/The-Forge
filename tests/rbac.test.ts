@@ -3,10 +3,6 @@ import { app, server } from '../src/app';
 import { generateToken } from '../src/utils/jwt';
 import { testIP } from '../src/utils/constants';
 
-afterAll((done) => {
-  server.close(done);
-});
-
 // Mock user data for testing
 const mockUsers = [
     { id: 'cm2ust9kd00090cjp97y37jbb', roles: [{ role: { id: 'cm2ustylt000c0cjpfutd2lzl', name: 'admin' } }] },  // Admin user
@@ -83,6 +79,10 @@ const sendGetRequest = async (endpoint: string, token: string | null) => {
 }
 
 describe('Role-Based Access Control (RBAC) Tests', () => {
+
+    afterAll(async () => {
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+    });
 
     describe('Admin-only routes', () => {
         

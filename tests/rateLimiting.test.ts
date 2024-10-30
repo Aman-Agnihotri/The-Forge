@@ -1,11 +1,7 @@
 import request from 'supertest';
 import { app, server } from '../src/app';
 import { generateToken } from '../src/utils/jwt';
-import { rateLimitConfig } from '../src/middlewares/rateLimitMiddleware';
-
-afterAll((done) => {
-  server.close(done);
-});
+import { getRateLimitConfig, testIP, testUserIP, testAdminIP  } from '../src/utils/constants';
 
 // Mock user data for testing
 const mockUsers = [
@@ -13,10 +9,12 @@ const mockUsers = [
     { id: 'cm2usvs7v000e0cjpfwam08rh', roles: [{ role: { name: 'user' } }] },   // Regular user
 ];
 
+const testRateLimits = getRateLimitConfig();
+
 // Generate tokens for each mock user
 const tokens = {
     admin: generateToken(mockUsers[0].id),
-    user: generateToken(mockUsers[1].id)
+    user: generateToken(mockUsers[1].id),
 };
 
 // Mock Prisma calls
@@ -30,85 +28,77 @@ jest.mock('../src/config/prisma', () => ({
     }
 }))
 
-// Helper function to send multiple requests
-const sendRequests = async (endpoint: string, token: string | null, count: number) => {
-    const responses = [];
-    for (let i = 0; i < count; i++) {
-        const res = await request(app)
-            .get(endpoint)
-            .set('Authorization', token ? `Bearer ${token}` : '')
-            .set('X-Forwarded-For', '123.45.67.89'); // Simulate same IP
-        responses.push(res);
-    }
-    return responses;
-};
-
 describe('Rate Limiting Tests', () => {
 
-    beforeAll(() => {
-        // Override rate limit configurations for testing
-        rateLimitConfig.ip.windowMs = 1000; // 1 second
-        rateLimitConfig.ip.max = 5; // 5 requests per second
-
-        rateLimitConfig.login.windowMs = 1000; // 1 second
-        rateLimitConfig.login.max = 2; // 2 requests per second
-
-        rateLimitConfig.registration.windowMs = 1000; // 1 second
-        rateLimitConfig.registration.max = 2; // 2 requests per second
-
-        rateLimitConfig.oauth.windowMs = 1000; // 1 second
-        rateLimitConfig.oauth.max = 2; // 2 requests per second
-
-        rateLimitConfig.roles.admin.points = 10; // 10 requests per second
-        rateLimitConfig.roles.admin.duration = 1; // 1 second
-
-        rateLimitConfig.roles.user.points = 5; // 5 requests per second
-        rateLimitConfig.roles.user.duration = 1; // 1 second
+    afterAll(async () => {
+        await new Promise<void>((resolve) => server.close(() => resolve()));
     });
+
+    // Helper function to send multiple requests
+    const sendRequests = async (IP: string, endpoint: string, token: string | null, count: number) => {
+        return Promise.all(
+            Array(count).fill(null).map(() => 
+                request(app)
+                    .get(endpoint)
+                    .set('Authorization', token ? `Bearer ${token}` : '')
+                    .set('X-Forwarded-For', IP)
+            )
+        );
+    };
+
+    // Helper function to wait for rate limit reset
+    const waitForReset = async (duration: number) => {
+        await new Promise(resolve => setTimeout(resolve, duration));
+    };
 
     describe('IP-Based Rate Limiting', () => {
         test('Blocks IP after exceeding request limit', async () => {
-            const responses = await sendRequests('/', null, 5);
+            const responses = await sendRequests(testIP, '/', null, testRateLimits.ip.limit + 5);
 
-            const allowedResponses = responses.slice(0, 5);
-            const blockedResponses = responses.slice(5);
+            const allowedResponses = responses.slice(0, testRateLimits.ip.limit);
+            const blockedResponses = responses.slice(testRateLimits.ip.limit);
 
             allowedResponses.forEach((res) => {
                 expect(res.status).toBe(200);
             });
+
             blockedResponses.forEach((res) => {
-                expect(res.status).toBe(429); // Rate limit exceeded
-                expect(res.body.message).toBe('Too many requests, please try again later after 60 seconds.');
+                expect(res.status).toBe(429);
+                expect(res.body.message).toBe("Too many requests from this IP, please try again after " + testRateLimits.ip.windowMs / 1000 + " seconds.");
             });
         });
 
         test('Unblocks IP after cooldown period', async () => {
-            await new Promise((r) => setTimeout(r, 1000)); // 60-second cooldown
+            await waitForReset(testRateLimits.ip.windowMs);
 
-            const res = await request(app).get('/')
-                .set('X-Forwarded-For', '123.45.67.89');
+            const res = await request(app).get('/').set('X-Forwarded-For', testIP);
 
-            expect(res.status).toBe(200); // Request should be allowed after cooldown
+            expect(res.status).toBe(200);
         });
     });
 
     describe('User-Based Rate Limiting', () => {
         test('Allows different rate limits for different user roles', async () => {
-            const adminResponses = await sendRequests('/v1/api/', tokens.admin, 10); // Higher limit for admin
-            const userResponses = await sendRequests('/v1/api/', tokens.user, 5); // Regular limit for user
+            const [adminResponses, userResponses] = await Promise.all([
+                sendRequests(testAdminIP, `/v1/api/users/${mockUsers[0].id}`, tokens.admin, testRateLimits.roles.admin.points + 5),
+                sendRequests(testUserIP, `/v1/api/users/${mockUsers[1].id}`, tokens.user, testRateLimits.roles.user.points + 5)
+            ]);
 
-            const allowedAdminResponses = adminResponses.slice(0, 10);
-            const blockedAdminResponses = adminResponses.slice(10);
+            // Check admin responses
+            const allowedAdminResponses = adminResponses.slice(0, testRateLimits.roles.admin.points);
+            const blockedAdminResponses = adminResponses.slice(testRateLimits.roles.admin.points);
 
             allowedAdminResponses.forEach((res) => {
                 expect(res.status).toBe(200);
             });
+
             blockedAdminResponses.forEach((res) => {
                 expect(res.status).toBe(429); // Admin limit exceeded
             });
 
-            const allowedUserResponses = userResponses.slice(0, 5); // Assuming user limit is 10
-            const blockedUserResponses = userResponses.slice(5);
+            // Check user responses
+            const allowedUserResponses = userResponses.slice(0, testRateLimits.roles.user.points);
+            const blockedUserResponses = userResponses.slice(testRateLimits.roles.user.points);
 
             allowedUserResponses.forEach((res) => {
                 expect(res.status).toBe(200);
@@ -116,16 +106,25 @@ describe('Rate Limiting Tests', () => {
             blockedUserResponses.forEach((res) => {
                 expect(res.status).toBe(429); // User limit exceeded
             });
+
         });
 
-        test('Resets user rate limit after cooldown period', async () => {
-            await new Promise((r) => setTimeout(r, 1000)); // Assuming 60-second cooldown
+        test('Resets admin and user rate limit after cooldown period', async () => {
+            await waitForReset(testRateLimits.roles.admin.duration * 1000);
 
-            const res = await request(app)
-                .get('/v1/api/')
-                .set('Authorization', `Bearer ${tokens.user}`);
-
-            expect(res.status).toBe(200); // Request should be allowed after cooldown
+            const [adminRes, userRes] = await Promise.all([
+                request(app)
+                    .get(`/v1/api/users/${mockUsers[0].id}`)
+                    .set('Authorization', `Bearer ${tokens.admin}`)
+                    .set('X-Forwarded-For', testAdminIP),
+                request(app)
+                    .get(`/v1/api/users/${mockUsers[1].id}`)
+                    .set('Authorization', `Bearer ${tokens.user}`)
+                    .set('X-Forwarded-For', testUserIP)
+            ]);
+                
+            expect(adminRes.status).toBe(200);
+            expect(userRes.status).toBe(200);
         });
     });
 });
