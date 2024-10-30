@@ -6,8 +6,8 @@ export const roleActionSchema = z.object({
     })
         .min(1, "Role name cannot be empty.")
         .min(3, "Role name must be at least 3 characters.")
-        .max(10, "Role name cannot exceed 10 characters.")
         .regex(/^[a-zA-Z]+$/, "Role name can only contain letters.")
+        .max(10, "Role name cannot exceed 10 characters.")
 });
 
 export function validateRoleId(id: string){

@@ -46,7 +46,7 @@ describe("JWT Authentication Tests", () => {
 			const res = await sendPostRequest("/v1/auth/register", {
 				username: `newuser`,
 				email: `newuser@example.com`,
-				password: `ValidPass!`
+				password: `ValidPass123`
 			}, null);
 
 			expect(res.statusCode).toBe(201);
@@ -57,11 +57,11 @@ describe("JWT Authentication Tests", () => {
 			const res =await sendPostRequest("/v1/auth/register", {
 				username: "duplicateEmailUser",
 				email: "user@usermail.com", // A test email that is already registered in the database
-				password: "ValidPass123!"
+				password: "ValidPass123"
 			}, null);
 
-			expect(res.statusCode).toBe(409); // Conflict
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.statusCode).toBe(409);
+			expect(res.body).toMatchObject({ message: "User already exists with provided email address." });
 		});
 
 		// Additional Validation Tests
@@ -72,7 +72,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Username is required." });
 		});
 
 		test("Register with empty username", async () => {
@@ -83,7 +83,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Username cannot be empty. It is required." });
 		});
 
 		test("Register with short username", async () => {
@@ -94,18 +94,18 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Username must be at least 6 characters long." });
 		});
 
 		test("Register with long username", async () => {
 			const res = await sendPostRequest("/v1/auth/register", {
-				username: "a".repeat(31),
+				username: "a".repeat(21),
 				email: "user@example.com",
 				password: "ValidPass123!"
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Username cannot exceed 20 characters." });
 		});
 
 		test("Register with invalid characters in username", async () => {
@@ -116,7 +116,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Username must contain only letters and numbers." });
 		});
 
 		test("Register with missing email", async () => {
@@ -126,7 +126,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Email is required." });
 		});
 
 		test("Register with empty email", async () => {
@@ -137,7 +137,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Email cannot be empty. It is required." });
 		});
 
 		test("Register with invalid email format", async () => {
@@ -148,7 +148,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Email must be a valid email address." });
 		});
 
 		test("Register with missing password", async () => {
@@ -158,7 +158,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Password is required." });
 		});
 
 		test("Register with empty password", async () => {
@@ -169,10 +169,10 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Password cannot be empty. It is required." });
 		});
 
-		test("Register with weak password", async () => {
+		test("Register with short password", async () => {
 			const res = await sendPostRequest("/v1/auth/register", {
 				username: "weakPassUser",
 				email: "user@example.com",
@@ -180,54 +180,77 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Password must be at least 8 characters long." });
 		});
+
+		test("Register with invalid password format", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: "invalidPassUser",
+				email: "user@example.com",
+				password: "password"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: "Password must contain at least one uppercase letter, one lowercase letter, and one number." });
+		})
 
 		test("Register with long password", async () => {
 			const res = await sendPostRequest("/v1/auth/register", {
 				username: "longPassUser",
 				email: "user@example.com",
-				password: "a".repeat(31)
+				password: "ValidPassword12345678901234563hello"
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Password cannot exceed 30 characters." });
 		});
 
 		test("Register with empty role name", async () => {
 			const res = await sendPostRequest("/v1/auth/register", {
 				username: "validUser",
 				email: "user@example.com",
-				password: "ValidPass123!",
+				password: "ValidPass123",
 				role_name: ""
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Role name cannot be empty." });
 		});
 
 		test("Register with short role name", async () => {
 			const res = await sendPostRequest("/v1/auth/register", {
 				username: "validUser",
 				email: "user@example.com",
-				password: "ValidPass123!",
+				password: "ValidPass123",
 				role_name: "ab"
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Role name must be at least 3 characters." });
+		});
+
+		test("Register with invalid characters in role name", async () => {
+			const res = await sendPostRequest("/v1/auth/register", {
+				username: "validUser",
+				email: "user@example.com",
+				password: "ValidPass123",
+				role_name: "invldRle3"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: "Role name must contain only letters." });
 		});
 
 		test("Register with long role name", async () => {
 			const res = await sendPostRequest("/v1/auth/register", {
 				username: "validUser",
 				email: "user@example.com",
-				password: "ValidPass123!",
+				password: "ValidPass123",
 				role_name: "a".repeat(11)
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Role name above 10 characters is invalid." });
 		});
 	});
 
@@ -236,7 +259,7 @@ describe("JWT Authentication Tests", () => {
 		test("Login with valid credentials", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
 				email: "user@usermail.com",
-				password: "user1234"
+				password: "User1234"
 			}, null);
 
 			expect(res.statusCode).toBe(200);
@@ -246,21 +269,31 @@ describe("JWT Authentication Tests", () => {
 		test("Login with invalid credentials", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
 				email: "user@usermail.com",
-				password: "invalidPassword"
+				password: "invalidPassword123"
 			}, null);
 
 			expect(res.statusCode).toBe(401);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Invalid password." });
 		});
 
 		test("Login with non-existent email", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
 				email: "nonExistentEmail@usermail.com",
-				password: "user1234"
+				password: "User1234"
 			}, null);
 
 			expect(res.statusCode).toBe(404);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "User not found with provided email address." });
+		});
+
+		test("Login with OAuth account email", async () => {
+			const res = await sendPostRequest("/v1/auth/login", {
+				email: "amanagnihotri412002@gmail.com",
+				password: "User1234"
+			}, null);
+
+			expect(res.statusCode).toBe(401);
+			expect(res.body).toMatchObject({ message: "A social login account with this email address already exists." });
 		});
 
 		// Aditional Validation Tests
@@ -270,7 +303,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Email is required." });
 		});
 
 		test("Login with empty email", async () => {
@@ -280,7 +313,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Email cannot be empty. It is required." });
 		});
 
 		test("Login with invalid email format", async () => {
@@ -290,7 +323,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Email must be a valid email address." });
 		});
 
 		test("Login with missing password", async () => {
@@ -299,7 +332,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Password is required." });
 		});
 
 		test("Login with empty password", async () => {
@@ -309,17 +342,27 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Password cannot be empty. It is required." });
 		});
 
-		test("Login with weak password", async () => {
+		test("Login with short password", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
 				email: "user@usermail.com",
 				password: "1234"
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Invalid Password." });
+		});
+
+		test("Login with invalid password format", async () => {
+			const res = await sendPostRequest("/v1/auth/login", {
+				email: "user@usermail.com",
+				password: "password"
+			}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: "Invalid Password." });
 		});
 
 		test("Login with long password", async () => {
@@ -329,7 +372,7 @@ describe("JWT Authentication Tests", () => {
 			}, null);
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: expect.any(String) });
+			expect(res.body).toMatchObject({ message: "Invalid Password." });
 		});
 	});
 
@@ -371,7 +414,7 @@ describe("JWT Authentication Tests", () => {
 
             const res = await sendPostRequest("/v1/auth/login", {
 				email: "user@usermail.com",
-				password: "user1234"
+				password: "User1234"
 			}, null);
 
             expect(res.statusCode).toBe(500);
