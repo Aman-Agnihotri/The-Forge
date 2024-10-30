@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
-import { registerUserSchema, updateUserSchema, validateUserRequest } from '../models/userModel';
+import { registerUserSchema, updateUserSchema, validateUserId } from '../models/userModel';
 import { DEFAULT_ROLE } from '../utils/constants';
 
 /**
@@ -99,11 +99,15 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const userId = validateUserRequest(id, null, null);
+    if (!validateUserId(id)) {
+        logger.warn(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format' });
+        return;
+    }
 
     try {
         const user = await prisma.users.findUnique({
-            where: { id: userId, deletedAt: null }, // Ensure the user isn’t soft deleted
+            where: { id, deletedAt: null }, // Ensure the user isn’t soft deleted
             select: { 
                 id: true,
                 username: true,
@@ -126,7 +130,7 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User with user ID '${userId}' not found. The user may be soft-deleted.`)
+            logger.warn(`User with user ID '${id}' not found. The user may be soft-deleted.`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -135,10 +139,6 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         res.json(user);
         return;
     } catch (error) {
-        if ((error as any).status){
-            res.status((error as any).status).json({ message: (error as any).message });
-            return;
-        }
         next({ message: 'Encountered some error while retrieving user with the provided ID', error});
     }
 };
@@ -157,11 +157,15 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 export const getUserByIdIncludingDeleted = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const userId = validateUserRequest(id, null, null);
+    if (!validateUserId(id)) {
+        logger.warn(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format' });
+        return;
+    }
 
     try {
         const user = await prisma.users.findUnique({
-            where: { id: userId },
+            where: { id },
             select: { 
                 id: true,
                 username: true,
@@ -184,7 +188,7 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
         });
 
         if (!user) {
-            logger.warn(`User with user ID '${userId}' not found`)
+            logger.warn(`User with user ID '${id}' not found`)
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -193,10 +197,6 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
         res.json(user);
         return;
     } catch (error) {
-        if ((error as any).status){
-            res.status((error as any).status).json({ message: (error as any).message });
-            return;
-        }
         next({ message: 'Encountered some error while retrieving user with the provided ID', error});
     }
 };
@@ -214,8 +214,15 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
  * @throws {500} - If an error occurs while creating the user
  */
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
+    const parseResult = registerUserSchema.safeParse(req.body);
 
-    const { email, username, password, role_name } = validateUserRequest(null, req.body, registerUserSchema);
+    if (!parseResult.success) {
+        logger.warn("User creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        res.status(400).json({ message: parseResult.error.errors[0].message });
+        return;
+    }
+
+    const { email, username, password, role_name } = parseResult.data;
 
     try {
         // Check if the user already exists
@@ -279,10 +286,6 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         res.status(201).json(newUser);
         return;
     } catch (error) {
-        if ((error as any).status){
-            res.status((error as any).status).json({ message: (error as any).message });
-            return;
-        }
         next({ message: 'Encountered some error while creating user', error});
     }
 };
@@ -302,7 +305,21 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const { email, username, password, role_name } = validateUserRequest(id, req.body, updateUserSchema);
+    if (!validateUserId(id)) {
+        logger.warn(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format' });
+        return;
+    }
+
+    const parseResult = updateUserSchema.safeParse(req.body);
+
+    if (!parseResult.success) {
+        logger.warn("User update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        res.status(400).json({ message: parseResult.error.errors[0].message });
+        return;
+    }
+
+    const { email, username, password, role_name } = parseResult.data;
 
     const authenticatedUser = req.user as any;
     const user = await prisma.users.findUnique({ where: { id: authenticatedUser.id } });
@@ -401,10 +418,6 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         res.json(updatedUser);
         return;
     } catch (error) {
-        if ((error as any).status){
-            res.status((error as any).status).json({ message: (error as any).message });
-            return;
-        }
         next({ message: 'Encountered some error while updating user', error });
     }
 };
@@ -423,37 +436,37 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
+    if (!validateUserId(id)) {
+        logger.warn(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format' });
+        return;
+    }
+
     try {
 
-        const userId = validateUserRequest(id, null, null);
-
         const user = await prisma.users.findUnique({
-            where: { id: userId }
+            where: { id }
         });
 
         if (!user) {
-            logger.warn(`User delete failed. User with id '${userId}' not found.`);
+            logger.warn(`User delete failed. User with id '${id}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else if (user.deletedAt) {
-            logger.warn(`User delete failed. User with id '${userId}' is already deleted.`);
+            logger.warn(`User delete failed. User with id '${id}' is already deleted.`);
             res.status(400).json({ message: 'User is already deleted' });
             return;
         }
 
         await prisma.users.update({
-            where: { id: userId },
+            where: { id },
             data: { deletedAt: new Date() } // Mark user as deleted by setting the timestamp
         });
 
-        logger.info(`User with id '${userId}' deleted successfully`);
+        logger.info(`User with id '${id}' deleted successfully`);
         res.json({ message: 'User deleted successfully' });
         return;
     } catch (error) {
-        if ((error as any).status){
-            res.status((error as any).status).json({ message: (error as any).message });
-            return;
-        }
         next({ message: 'Encountered some error while deleting user', error });
     }
 };
@@ -472,20 +485,25 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 export const restoreUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
+    if (!validateUserId(id)) {
+        logger.warn(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format' });
+        return;
+    }
+
     try {
-        const userId = validateUserRequest(id, null, null);
 
         // Ensure the user is currently soft-deleted
         const user = await prisma.users.findUnique({
-            where: { id: userId }
+            where: { id }
         });
 
         if (!user) {
-            logger.warn(`User restore failed. User with id '${userId}' not found.`);
+            logger.warn(`User restore failed. User with id '${id}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         } else if (!user.deletedAt) {
-            logger.warn(`User restore failed. User with id '${userId}' is not soft-deleted.`);
+            logger.warn(`User restore failed. User with id '${id}' is not soft-deleted.`);
             res.status(400).json({ message: 'User is not soft-deleted' });
             return;
         }
@@ -496,14 +514,10 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
             data: { deletedAt: null }
         });
 
-        logger.info(`User with id '${userId}' restored successfully`);
+        logger.info(`User with id '${id}' restored successfully`);
         res.json({ message: 'User restored successfully' });
         return;
     } catch (error) {
-        if ((error as any).status){
-            res.status((error as any).status).json({ message: (error as any).message });
-            return;
-        }
         next({ message: 'Encountered some error while restoring user', error });
     }
 };
@@ -522,15 +536,20 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
 export const permanentlyDeleteUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
+    if (!validateUserId(id)) {
+        logger.warn(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format' });
+        return;
+    }
+
     try {
-        const userId = validateUserRequest(id, null, null);
 
         const user = await prisma.users.findUnique({
-            where: { id: userId },
+            where: { id },
         });
 
         if (!user) {
-            logger.warn(`User permanent deletion failed. User with id '${userId}' not found.`);
+            logger.warn(`User permanent deletion failed. User with id '${id}' not found.`);
             res.status(404).json({ message: 'User not found' });
             return;
         }
@@ -550,14 +569,10 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
             where: { id },
         });
 
-        logger.info(`User with id '${userId}' permanently deleted successfully`);
+        logger.info(`User with id '${id}' permanently deleted successfully`);
         res.json({ message: 'User permanently deleted successfully' });
         return;
     } catch (error) {
-        if ((error as any).status){
-            res.status((error as any).status).json({ message: (error as any).message });
-            return;
-        }
         next({ message: 'Encountered some error while permanently deleting user', error });
     }
 };

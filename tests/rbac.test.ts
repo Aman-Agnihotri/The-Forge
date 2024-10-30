@@ -8,9 +8,9 @@ afterAll((done) => {
 
 // Mock user data for testing
 const mockUsers = [
-    { id: '1', roles: [{ role: { id: '1', name: 'admin' } }] },  // Admin user
-    { id: '2', roles: [{ role: { id: '2', name: 'user' } }] },   // Regular user
-    { id: '3', roles: [] }                              // No role assigned
+    { id: 'cm2ust9kd00090cjp97y37jbb', roles: [{ role: { id: 'cm2ustylt000c0cjpfutd2lzl', name: 'admin' } }] },  // Admin user
+    { id: 'cm2usvs7v000e0cjpfwam08rh', roles: [{ role: { id: 'cm2usu59l000d0cjpbythal9r', name: 'user' } }] },   // Regular user
+    { id: 'cm2ustou3000b0cjp74qx7ynm', roles: [] }                                                               // No role assigned
 ];
 
 // Generate tokens for each mock user
@@ -95,8 +95,9 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
     describe('Admin or User route', () => {
         
         test('Admin should access route accessible to admin or user', async () => {
+
             const res = await request(app)
-                .get('/v1/api/users/1')  // Route accessible to admin and user
+                .get('/v1/api/users/cm2ust9kd00090cjp97y37jbb')  // Route accessible to admin and user
                 .set('Authorization', `Bearer ${tokens.admin}`);
             
             expect(res.status).toBe(200); 
@@ -105,7 +106,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
 
         test('User should access route accessible to admin or user', async () => {
             const res = await request(app)
-                .get('/v1/api/users/2')
+                .get('/v1/api/users/cm2usvs7v000e0cjpfwam08rh')
                 .set('Authorization', `Bearer ${tokens.user}`);
             
             expect(res.status).toBe(200); 
@@ -114,7 +115,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
 
         test('User with no roles should be denied access', async () => {
             const res = await request(app)
-                .get('/v1/api/users/3')
+                .get('/v1/api/users/cm2ustou3000b0cjp74qx7ynm')
                 .set('Authorization', `Bearer ${tokens.noRole}`);
             
             expect(res.status).toBe(403);
@@ -126,7 +127,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
 
         test('Admin should modify user role successfully', async () => {
             const res = await request(app)
-                .put('/v1/api/users/2')  // Endpoint for updating roles
+                .put('/v1/api/users/cm2usvs7v000e0cjpfwam08rh')  // Endpoint for updating roles
                 .set('Authorization', `Bearer ${tokens.admin}`)
                 .send({ role_name: 'admin' }); // Assign new role
                         
@@ -148,7 +149,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
 
         test('Non-admin user should be denied role modification access', async () => {
             const res = await request(app)
-                .put('/v1/api/users/3')
+                .put('/v1/api/users/cm2ustou3000b0cjp74qx7ynm')
                 .set('Authorization', `Bearer ${tokens.noRole}`)
                 .send({ role_name: 'admin' });
             

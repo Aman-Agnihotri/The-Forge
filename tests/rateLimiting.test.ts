@@ -9,8 +9,8 @@ afterAll((done) => {
 
 // Mock user data for testing
 const mockUsers = [
-    { id: '1', roles: [{ role: { name: 'admin' } }] },  // Admin user
-    { id: '2', roles: [{ role: { name: 'user' } }] },   // Regular user
+    { id: 'cm2ust9kd00090cjp97y37jbb', roles: [{ role: { name: 'admin' } }] },  // Admin user
+    { id: 'cm2usvs7v000e0cjpfwam08rh', roles: [{ role: { name: 'user' } }] },   // Regular user
 ];
 
 // Generate tokens for each mock user

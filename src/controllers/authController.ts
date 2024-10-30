@@ -7,7 +7,7 @@ import {
     JsonWebTokenError 
 } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
-import { registerUserSchema, loginUserSchema, validateUserRequest } from "../models/userModel";
+import { registerUserSchema, loginUserSchema } from "../models/userModel";
 import { prisma } from "../config/prisma";
 import logger from "../services/logger";
 import { DEFAULT_ROLE } from "../utils/constants";
@@ -26,8 +26,14 @@ import { DEFAULT_ROLE } from "../utils/constants";
  * @throws {500} - An error occurred while registering user
  */
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    
-    const { username, email, password, role_name } = validateUserRequest(null, req.body, registerUserSchema);
+    const parseResult = registerUserSchema.safeParse(req.body);
+
+    if (!parseResult.success) {
+        logger.warn("User registration failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        return res.status(400).json({ message: parseResult.error.errors[0].message });
+    }
+
+    const { username, email, password, role_name } = parseResult.data;
 
     try{
         //Check if the user already exists
@@ -82,9 +88,6 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         // Return the JWT and the user object
         return res.status(201).json({ token, refreshToken, user: filteredUserData });
     } catch (error) {
-        if ((error as any).status){
-            return res.status((error as any).status).json({ message: (error as any).message });
-        }
         next({ message: "An error occurred while registering user.", error });
     }
 };
@@ -103,8 +106,14 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
  * @throws {500} - An error occurred while logging in
  */
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const parseResult = loginUserSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+        logger.warn("User login failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        return res.status(400).json({ message: parseResult.error.errors[0].message });
+    }
 
-    const { email, password } = validateUserRequest(null, req.body, loginUserSchema);
+    const { email, password } = parseResult.data;
 
     try{
         //Check if the user exists
@@ -147,9 +156,6 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
         logger.info(`User '${user.username}' logged in successfully with email '${email}'.`);
         return res.status(200).json({ token, refreshToken, user: filteredUserData });
     } catch (error) {
-        if ((error as any).status){
-            return res.status((error as any).status).json({ message: (error as any).message });
-        }
         next({ message: "An error occurred while logging in.", error });
     }
 };
