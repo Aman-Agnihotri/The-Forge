@@ -2,6 +2,7 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 import rateLimit from "express-rate-limit";
 import { Request, Response, NextFunction } from "express";
 import logger from "../services/logger";
+import { rateLimitBypassIps } from "../utils/constants";
 
 // Configuration object that can be modified for testing
 export const rateLimitConfig = {
@@ -45,6 +46,7 @@ export const createIpRateLimiter = (config = rateLimitConfig.ip) => rateLimit({
     message: "Too many requests from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`IP rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -67,6 +69,7 @@ export const createLoginRateLimiter = (config = rateLimitConfig.login) => rateLi
     max: config.max,
     message: "Too many login attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
+    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`Login rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -91,6 +94,7 @@ export const createRegistrationRateLimiter = (config = rateLimitConfig.registrat
     max: config.max,
     message: "Too many registration attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
+    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`Registration rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -115,6 +119,7 @@ export const createTokenRefreshRateLimiter = (config = rateLimitConfig.token_ref
     max: config.max,
     message: "Too many token refresh attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     standardHeaders: true,
+    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`Token refresh rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -139,6 +144,7 @@ export const createOauthLoginRateLimiter = (config = rateLimitConfig.oauth) => r
     max: config.max,
     standardHeaders: true,
     message: "Too many login attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
+    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`OAuth login rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -163,6 +169,7 @@ export const createOauthLinkingRateLimiter = (config = rateLimitConfig.oauth) =>
     max: config.max,
     standardHeaders: true,
     message: "Too many OAuth linking attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
+    skip: (req: Request, res: Response) => rateLimitBypassIps.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.warn(`OAuth linking rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
@@ -195,6 +202,12 @@ const rolePriority = { admin: 3, user: 2, guest: 1 };
  */
 export const useRateLimitMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user; // Access the authenticated user from the request
+
+    // Check if the request IP is in the bypass list
+    if (rateLimitBypassIps.includes(req.ip as string)) {
+        logger.info(`Rate limit bypass for IP: ${req.ip}`);
+        return next();
+    }
 
     if (!user.roles || user.roles.length === 0) {
         logger.warn(`Access denied: User has no roles assigned. User ID: ${user.id}, IP: ${req.ip}`);

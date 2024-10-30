@@ -72,3 +72,8 @@ export const LOGGER = getEnvVar('LOGGER', 'pino');
 export const LOG_LEVEL = getEnvVar('LOG_LEVEL', 'info');
 
 export const DEFAULT_ROLE="user";
+
+// Allowed IP addresses for rate limit bypass for testing
+export const rateLimitBypassIps = "244.128.248.221";
+
+export const testIP = "123.45.67.89";

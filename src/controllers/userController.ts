@@ -321,8 +321,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 
     const { email, username, password, role_name } = parseResult.data;
 
-    const authenticatedUser = req.user as any;
-    const user = await prisma.users.findUnique({ where: { id: authenticatedUser.id } });
+    const requestingUser = req.user as any;
 
     try {
         // Check if the user exists
@@ -333,6 +332,9 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             res.status(404).json({ message: 'User not found' });
             return;
         }
+
+        // Check if the requesting user is an admin
+        const isAdmin = requestingUser.roles.every((role: any) => role.role.name === 'admin');
 
         const userUpdateData: any = {};
 
@@ -345,17 +347,16 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         }
 
         if(password){
-            if (id === user?.id) {
+            if (id === requestingUser.id) {
                 userUpdateData.password = await hashPassword(password);
                 logger.info(`User with id '${id}' is updating their own password.`);
 
-            // Check if the authenticated user is an admin
-            } else if(authenticatedUser.roles.every((role: any) => role.role.name === 'admin')) {
+            } else if(isAdmin) {
                 userUpdateData.password = await hashPassword(password);
-                logger.info(`User with id '${authenticatedUser.id}' is an admin and is updating the password of user with id '${id}'.`);
+                logger.info(`User with id '${requestingUser.id}' is an admin and is updating the password of user with id '${id}'.`);
 
             } else {
-                logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${authenticatedUser.id}' is trying to change the password of user with id '${id}'.`);
+                logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${requestingUser.id}' is trying to change the password of user with id '${id}'.`);
                 res.status(403).json({ message: 'You do not have permission to update this user. You can only change your own password. Please contact an admin for additional help.' });
                 return;
             }
@@ -363,6 +364,14 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 
         // If a new roleName is provided, find the role and connect it
         if (role_name) {
+
+            // Check if the authenticated user is an admin. If not, deny the request
+            if (!isAdmin) {
+                logger.warn(`User update failed. Requesting user with id '${requestingUser.id}' does not have permission to update the role of a user. The user with id '${requestingUser.id}' is trying to change the role of user with id '${id}'.`);
+                res.status(403).json({ message: 'You do not have permission to update the role of a user. Please contact an admin for additional help.' });
+                return;
+            }
+
             const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
             if (!role) {
