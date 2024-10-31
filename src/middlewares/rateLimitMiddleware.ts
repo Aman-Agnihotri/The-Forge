@@ -151,6 +151,16 @@ export const createOauthLinkingRateLimiter = (config = rateLimitConfig.oauth) =>
 // Export the OAuth linking rate limiter
 export const oauthLinkingRateLimiter = createOauthLinkingRateLimiter();
 
+/**
+ * Creates an OAuth unlinking rate limiter based on the given configuration.
+ * 
+ * @param {Object} [config=rateLimitConfig.oauth] - The configuration object for the rate limiter.
+ * @property {number} config.windowMs - The time frame in milliseconds for the rate limit.
+ * @property {number} config.limit - The maximum number of OAuth unlinking attempts allowed in the time frame.
+ * @property {string} config.message - The message to return when the rate limit is exceeded.
+ * 
+ * @returns {express.RequestHandler} The OAuth unlinking rate limiter middleware.
+ */
 export const createOauthUnlinkingRateLimiter = (config = rateLimitConfig.oauth) => rateLimit({
     windowMs: config.windowMs,
     limit: config.limit,
@@ -216,6 +226,6 @@ export const useRateLimitMiddleware = async (req: Request, res: Response, next: 
         next();
     }).catch(() => {
         logger.warn(`Rate limit exceeded for user ID: ${userID}, Role: ${role}, IP: ${req.ip}`);
-        return res.status(429).json({ message: 'Too many requests, please try again later.' });  // Limit exceeded
+        return res.status(429).json({ message: `Too many requests, please try again after ${rateLimiter.msDuration / 1000} seconds.` });  // Limit exceeded
     });
 }

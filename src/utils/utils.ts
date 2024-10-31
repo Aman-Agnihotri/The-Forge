@@ -32,7 +32,7 @@ export function getClientId(provider: OAuthProvider) {
  * Retrieves the client secret for the specified OAuth provider.
  *
  * @param {OAuthProvider} provider - The provider for which to retrieve the client secret.
- * @returns {string} The client secret associated with the specified provider.
+ * @returns The client secret associated with the specified provider.
  * @throws {Error} If the specified provider is unsupported.
  */
 export function getClientSecret(provider: OAuthProvider) {

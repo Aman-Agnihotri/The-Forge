@@ -102,6 +102,14 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
             expect(res.body.message).toBe('Access denied: insufficient permissions');
         });
 
+        test('User with no roles should be denied access to admin-only route', async () => {
+                
+                const res = await sendGetRequest('/v1/api/users', tokens.noRole);
+                
+                expect(res.status).toBe(403);
+                expect(res.body.message).toBe('Access denied: User has no roles assigned');
+        });
+
         test('Unauthenticated user should be denied access to admin-only route', async () => {
             const res = await sendGetRequest('/v1/api/users', null);
             
@@ -117,7 +125,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
             const res = await sendGetRequest(`/v1/api/users/${mockUsers[0].id}`, tokens.admin);
             
             expect(res.status).toBe(200); 
-            expect(res.body).toHaveProperty("id");
+            expect(res.body.id).toBe(mockUsers[0].id);
         });
 
         test('User should access route accessible to admin or user', async () => {
@@ -125,7 +133,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
             const res = await sendGetRequest(`/v1/api/users/${mockUsers[1].id}`, tokens.user1);
             
             expect(res.status).toBe(200); 
-            expect(res.body).toHaveProperty("id");
+            expect(res.body.id).toBe(mockUsers[1].id);
         });
 
         test('User with no roles should be denied access', async () => {
@@ -135,16 +143,29 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
             expect(res.status).toBe(403);
             expect(res.body.message).toBe('Access denied: User has no roles assigned');
         });
+
+        test('Unauthenticated user should be denied access', async () => {
+
+            const res = await sendGetRequest(`/v1/api/users/${mockUsers[3].id}`, null);
+            
+            expect(res.status).toBe(401);
+            expect(res.body.message).toBe('Unauthorized, please log in');
+        })
     });
     
     describe('Role Modification', () => {
 
         test('Admin should modify user role successfully', async () => {
 
-            const res = await sendPutRequest(`/v1/api/users/${mockUsers[1].id}`, { role_name: 'admin' }, tokens.admin);
+            const res1 = await sendGetRequest(`/v1/api/users/`, tokens.user1);
+
+            expect(res1.status).toBe(403);
+            expect(res1.body.message).toBe('Access denied: insufficient permissions');
+
+            const res2 = await sendPutRequest(`/v1/api/users/${mockUsers[1].id}`, { role_name: 'admin' }, tokens.admin);
                         
-            expect(res.status).toBe(200);
-            expect(res.body).toHaveProperty("id");
+            expect(res2.status).toBe(200);
+            expect(res2.body.id).toBe(mockUsers[1].id);
             expect(mockUsers[1].roles[1].role.name).toBe('admin');
 
             // Refresh token for the modified user
@@ -164,7 +185,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
             const res = await sendPutRequest(`/v1/api/users/${mockUsers[2].id}`, { role_name: 'admin' }, tokens.user2);
             
             expect(res.status).toBe(403);
-            expect(res.body.message).toBe('You do not have permission to update the role of a user. Please contact an admin for additional help.');
+            expect(res.body.message).toBe('Self role update is not allowed.');
         });
     });
 });

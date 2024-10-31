@@ -336,6 +336,12 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         // Check if the requesting user is an admin
         const isAdmin = requestingUser.roles.every((role: any) => role.role.name === 'admin');
 
+        if (!isAdmin && id !== requestingUser.id) {
+            logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${requestingUser.id}' is trying to update user with id '${id}'.`);
+            res.status(403).json({ message: 'You do not have permission to update this user. Please contact an admin for additional help.' });
+            return;
+        }
+
         const userUpdateData: any = {};
 
         if(username){
@@ -354,23 +360,11 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             } else if(isAdmin) {
                 userUpdateData.password = await hashPassword(password);
                 logger.info(`User with id '${requestingUser.id}' is an admin and is updating the password of user with id '${id}'.`);
-
-            } else {
-                logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${requestingUser.id}' is trying to change the password of user with id '${id}'.`);
-                res.status(403).json({ message: 'You do not have permission to update this user. You can only change your own password. Please contact an admin for additional help.' });
-                return;
             }
         }
 
         // If a new roleName is provided, find the role and connect it
-        if (role_name) {
-
-            // Check if the authenticated user is an admin. If not, deny the request
-            if (!isAdmin) {
-                logger.warn(`User update failed. Requesting user with id '${requestingUser.id}' does not have permission to update the role of a user. The user with id '${requestingUser.id}' is trying to change the role of user with id '${id}'.`);
-                res.status(403).json({ message: 'You do not have permission to update the role of a user. Please contact an admin for additional help.' });
-                return;
-            }
+        if (role_name && isAdmin && id !== requestingUser.id) {
 
             const role = await prisma.roles.findUnique({ where: { name: role_name } });
 
@@ -402,6 +396,10 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
                     }
                 });
             }
+        } else {
+            logger.warn(`User with id '${requestingUser.id} tried to update their own role. This action is not allowed.`);
+            res.status(403).json({ message: 'Self role update is not allowed.' });
+            return;
         }
 
         const updatedUser = await prisma.users.update({

@@ -7,11 +7,9 @@ import { getRateLimitConfig, testIP, testUserIP, testAdminIP  } from '../src/uti
 const mockUsers = [
     { id: 'cm2ust9kd00090cjp97y37jbb', roles: [{ role: { name: 'admin' } }], providers: [] },  // Admin user
     { id: 'cm2usvs7v000e0cjpfwam08rh', roles: [{ role: { name: 'user' } }], providers: [] },   // Regular user
-    { id: 'cm2rsk2zw0004nury51slrgu0', roles: [{ role: { name: 'user' } }], providers: [ { providerName: "kuchhbhinahi" }] },   // Test user
+    { id: 'cm2rsk2zw0004nury51slrgu0', roles: [{ role: { name: 'user' } }], providers: [ { providerName: "kuchhbhinahi" }] },   // Test user with valid ID
+    { id: 'cm2ustou3000b0cjp74qx7ynm', roles: [{ role: { name: 'user' } }, { role: { name: 'admin' } }], providers: [] }                                                               // No role assigned
 ];
-
-const testValidId = 'cm2rsk2zw0004nury51slrgu0';
-let testToken: string;
 
 const extraRequests = 3; // Number of extra requests to exceed rate limit
 
@@ -36,6 +34,8 @@ const testRateLimits = getRateLimitConfig();
 const tokens = {
     admin: generateToken(mockUsers[0].id),
     user: generateToken(mockUsers[1].id),
+    validID: generateToken(mockUsers[2].id),
+    multi: generateToken(mockUsers[3].id)
 };
 
 // Mock Prisma calls
@@ -131,10 +131,6 @@ describe('Rate Limiting Tests', () => {
     });
 
     describe('Route Specific Rate Limiting', () => {
-
-        beforeAll(() => {
-            testToken = generateToken(testValidId);
-        });
 
         test('Blocks requests to login route after exceeding limit', async () => {
             const responses = await sendPostRequests('/v1/auth/login', testUser.login, null, testRateLimits.login.limit + extraRequests);
@@ -253,7 +249,7 @@ describe('Rate Limiting Tests', () => {
 
         test('Blocks requests to OAuth linking route after exceeding limit', async () => {
 
-            const responses = await sendRequests(testIP, '/v1/auth/google?linking=true&token=' + testToken, null, testRateLimits.oauth.limit + extraRequests);
+            const responses = await sendRequests(testIP, '/v1/auth/google?linking=true&token=' + tokens.validID, null, testRateLimits.oauth.limit + extraRequests);
 
             const allowedResponses = responses.slice(0, testRateLimits.oauth.limit);
             const blockedResponses = responses.slice(testRateLimits.oauth.limit);
@@ -273,7 +269,7 @@ describe('Rate Limiting Tests', () => {
             await waitForReset(testRateLimits.oauth.windowMs);
 
             const res = await request(app)
-                .get('/v1/auth/google?linking=true&token=' + testToken)
+                .get('/v1/auth/google?linking=true&token=' + tokens.validID)
                 .set('X-Forwarded-For', testIP);
 
             expect(res.status).toBe(302);
@@ -281,7 +277,7 @@ describe('Rate Limiting Tests', () => {
         });
 
         test('Blocks requests to OAuth unlinking route after exceeding limit', async () => {
-            const responses = await sendDeleteRequests('/v1/auth/unlink/google', testToken, testRateLimits.oauth.limit + extraRequests);
+            const responses = await sendDeleteRequests('/v1/auth/unlink/google', tokens.validID, testRateLimits.oauth.limit + extraRequests);
 
             const allowedResponses = responses.slice(0, testRateLimits.oauth.limit);
             const blockedResponses = responses.slice(testRateLimits.oauth.limit);
@@ -302,7 +298,7 @@ describe('Rate Limiting Tests', () => {
 
             const res = await request(app)
                 .delete('/v1/auth/unlink/google')
-                .set('Authorization', `Bearer ${testToken}`)
+                .set('Authorization', `Bearer ${tokens.validID}`)
                 .set('X-Forwarded-For', testIP);
 
             expect(res.status).toBe(404);
@@ -328,6 +324,7 @@ describe('Rate Limiting Tests', () => {
 
             blockedAdminResponses.forEach((res) => {
                 expect(res.status).toBe(429); // Admin limit exceeded
+                expect(res.body.message).toBe("Too many requests, please try again after " + testRateLimits.roles.admin.duration + " seconds.");
             });
 
             // Check user responses
@@ -340,6 +337,7 @@ describe('Rate Limiting Tests', () => {
             });
             blockedUserResponses.forEach((res) => {
                 expect(res.status).toBe(429); // User limit exceeded
+                expect(res.body.message).toBe("Too many requests, please try again after " + testRateLimits.roles.user.duration + " seconds.");
             });
 
         });
@@ -362,6 +360,24 @@ describe('Rate Limiting Tests', () => {
             expect(adminRes.body.id).toBe(mockUsers[0].id);
             expect(userRes.status).toBe(200);
             expect(userRes.body.id).toBe(mockUsers[1].id);
+        });
+
+        test('Assign correct rate limit based on the highest priority role, if multiple roles exist', async () => {
+            // Limits should be applied based on the highest priority role, which is admin in this case
+            const res = await sendRequests(testIP, `/v1/api/users/${mockUsers[3].id}`, tokens.multi, testRateLimits.roles.admin.points + extraRequests);
+
+            const allowedResponses = res.slice(0, testRateLimits.roles.admin.points);
+            const blockedResponses = res.slice(testRateLimits.roles.admin.points);
+
+            allowedResponses.forEach((res) => {
+                expect(res.status).toBe(200);
+                expect(res.body.id).toBe(mockUsers[3].id);
+            });
+
+            blockedResponses.forEach((res) => {
+                expect(res.status).toBe(429);
+                expect(res.body.message).toBe("Too many requests, please try again after " + testRateLimits.roles.admin.duration + " seconds.");
+            });
         });
     });
 });
