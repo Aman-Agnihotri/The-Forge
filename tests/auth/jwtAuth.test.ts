@@ -1,8 +1,8 @@
 import request from 'supertest';
-import { app, server } from '../src/app';
-import { prisma } from '../src/config/prisma';
-import { generateRefreshToken, generateToken } from '../src/utils/jwt';
-import { rateLimitBypassIp } from '../src/utils/constants';
+import { app, server } from '../../src/app';
+import { prisma } from '../../src/config/prisma';
+import { generateRefreshToken, generateToken } from '../../src/utils/jwt';
+import { rateLimitBypassIp } from '../../src/utils/constants';
 
 const testValidId = 'cm2rsk2zw0004nury51slrgu0';
 
