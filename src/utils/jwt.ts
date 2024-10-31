@@ -31,9 +31,8 @@ export const verifyToken = (token: string) => {
  * @returns {string} a JSON Web Token that can be used to obtain a new access token
  */
 export const generateRefreshToken = (userId: string): string => {
-    return jwt.sign({id: userId }, REFRESH_JWT_SECRET, {algorithm: "HS512" , expiresIn: REFRESH_JWT_EXPIRATION });
+    return jwt.sign({ id: userId }, REFRESH_JWT_SECRET, {algorithm: "HS512" , expiresIn: REFRESH_JWT_EXPIRATION });
 }
-
 
 /**
  * Verifies a refresh token and decodes the user id from it.

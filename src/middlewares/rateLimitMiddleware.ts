@@ -151,6 +151,21 @@ export const createOauthLinkingRateLimiter = (config = rateLimitConfig.oauth) =>
 // Export the OAuth linking rate limiter
 export const oauthLinkingRateLimiter = createOauthLinkingRateLimiter();
 
+export const createOauthUnlinkingRateLimiter = (config = rateLimitConfig.oauth) => rateLimit({
+    windowMs: config.windowMs,
+    limit: config.limit,
+    standardHeaders: true,
+    message: "Too many OAuth unlinking attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
+    skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
+    handler: (req, res, next, options) => {
+        logger.warn(`OAuth unlinking rate limit exceeded for IP: ${req.ip}`);
+        res.status(options.statusCode).json({ message: options.message });
+    }
+});
+
+// Export the OAuth unlinking rate limiter
+export const oauthUnlinkingRateLimiter = createOauthUnlinkingRateLimiter();
+
 // Create a RateLimiterMemory instance for each role
 const rateLimiters = {
     admin: new RateLimiterMemory(rateLimitConfig.roles.admin),

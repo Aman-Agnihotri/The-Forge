@@ -90,6 +90,12 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
                 message: 'Token has expired',
                 status: 401
             }))
+        } else if (error instanceof Error && error.message === 'invalid signature'){
+            logger.warn("Invalid token signature: " + error.message);
+            return done(JSON.stringify({
+                message: 'Invalid token signature',
+                status: 401
+            }))
         } else if (error instanceof JsonWebTokenError) {
             logger.warn("Malformed token: " + error.message);
             return done(JSON.stringify({

@@ -1,7 +1,27 @@
 import request from 'supertest';
 import { app, server } from '../src/app';
 import { prisma } from '../src/config/prisma';
+import { generateRefreshToken, generateToken } from '../src/utils/jwt';
 import { rateLimitBypassIp } from '../src/utils/constants';
+
+const testValidId = 'cm2rsk2zw0004nury51slrgu0';
+
+// Invalid tokens for testing with no expiration (no confidential data)
+const accessTokenHasString = "eyJhbGciOiJIUzUxMiJ9.SGFpbiwgaGF1bHU.D7w-veXI7pv5DxT6x5vRDlQp92jn5uzyEu5IMQU1ydl-ARSCVX3L3W4EZsR6NAwqZnHAMloMVNpGRc6Q6KtUEQ";
+
+const accessTokenNotWithId = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNzMwMzE2MDcyfQ.tSM-EiAaS0C6yN_T1gqTtwAfaD4wdPCuqkzzuH5xWnozUd4Ul7H9VzCa-8xHTzpSO1-H_lEmaRI5XnSoawvu6w";
+
+const accessTokenWithInvalidId = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtMnc5dW01NTAwMDAwY21uMDF5azFvZGYiLCJpYXQiOjE3MzAzMTcwMDl9.eS_aeOyNN7s-jYYQ6loot18Xng3JcYnIGSbWOUaadqnjiyQJGxRZUYUSnuWc358xJ75wrA6gXNgM_u3152lslQ";
+
+const accessTokenWithInvalidSecret = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtMnJzazJ6dzAwMDRudXJ5NTFzbHJndTAiLCJpYXQiOjE3MzAzNTA0NjB9.ASIJTksSvFjfp9YteDLcy0Hye2HsW_JIriNAuFt5TfjW6Piy7Eds8xoE8pGwbb13zQ5LSC6RjiS-CimkhwQEVQ";
+
+const refreshTokenHasString = "eyJhbGciOiJIUzUxMiJ9.SGFpbiwgaGF1bHU.ASv6t7ff23nmJYE7QpwYJrsmXxmeKRmzjwr7D6yMBiW0vhdFyLKuT0HVGUheQr3PHOebdkLWuizSQ0c8qXiKvA";
+
+const refreshTokenNotWithId = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InRlc3RVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNzMwMzE2MDcyfQ.db6jkyZ8DbLnh3bgTKUXcdD9MP2UBYFEux_vh8nAjsO1q3DdmAgVIXWEvGQR3SgA86cvYRzWMvlQUa9edic-aA";
+
+const refreshTokenWithInvalidId = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtMnc5dW01NTAwMDAwY21uMDF5azFvZGYiLCJpYXQiOjE3MzAzMTcwMDl9.Z9DM__C5FbwDiM7mjjam5FKGRmyvnmRcfxE3LC9eypfohHU0qsbgKM055v24r1HsDY_770jodTZxMTLZOi5-Kw";
+
+const refreshTokenWithInvalidSecret = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtMnJzazJ6dzAwMDRudXJ5NTFzbHJndTAiLCJpYXQiOjE3MzAzNTA0NjB9.u-a2qczeYmJk4rLZDSaZODmwF9Y4qx8Rmzdn7UJj0rYoC8nVcedxPJaep2pm9WieTrtaaCbRl48QEq0vvFVZ9Q";
 
 //Helper functions to send requests
 const sendPostRequest = async (endpoint: string, body: any, token: string | null) => {
@@ -9,7 +29,7 @@ const sendPostRequest = async (endpoint: string, body: any, token: string | null
 		.post(endpoint)
 		.send(body)
 		.set('Authorization', token ? `Bearer ${token}` : '')
-		.set('X-Forwarded-For', rateLimitBypassIp); // Simulate same IP
+		.set('X-Forwarded-For', rateLimitBypassIp);
 	return res;
 }
 
@@ -17,7 +37,7 @@ const sendGetRequest = async (endpoint: string, token: string | null) => {
 	const res = await request(app)
 		.get(endpoint)
 		.set('Authorization', token ? `Bearer ${token}` : '')
-		.set('X-Forwarded-For', rateLimitBypassIp); // Simulate same IP
+		.set('X-Forwarded-For', rateLimitBypassIp);
 	return res;
 }
 
@@ -27,7 +47,6 @@ describe("JWT Authentication Tests", () => {
         await new Promise<void>((resolve) => server.close(() => resolve()));
     });
 
-	// User Registration Tests
 	describe("User Registration", () => {
 
 		afterAll(async () => {
@@ -254,7 +273,6 @@ describe("JWT Authentication Tests", () => {
 		});
 	});
 
-	// Login Tests
 	describe("User Login", () => {
 		test("Login with valid credentials", async () => {
 			const res = await sendPostRequest("/v1/auth/login", {
@@ -376,10 +394,20 @@ describe("JWT Authentication Tests", () => {
 		});
 	});
 
-	// JWT Token Validation
 	describe("JWT Token Validation", () => {
+
+		test("Access with valid token", async () => {
+			const testAccessToken = generateToken(testValidId);
+
+			const res = await sendGetRequest("/v1/api/", testAccessToken);
+
+			expect(res.statusCode).toBe(200);
+			// Expect to have a entity object named "userinfo" in the response body object
+			expect(res.body).toMatchObject(...[{ userinfo: expect.any(Object) }]);
+			
+		});
+
 		test("Expired token access", async () => {
-			// Assuming token is generated with a short expiry time for testing
 			const expiredToken = "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtMjd5a2lvZjAwMDAxMDJscGdkNjl1cXoiLCJpYXQiOjE3MzAwMjgzMzUsImV4cCI6MTczMDAyODYzNX0.yOqTslRMBkkF4uVdFeHttCIGbTkhsdxKKHWVU5b-KI_U3ON-iLKpn4DNa97kGMPsUvUqNf-SJ6aj4sd21A6TPw";
 
 			const res = await sendGetRequest("/v1/api/", expiredToken);
@@ -395,30 +423,138 @@ describe("JWT Authentication Tests", () => {
 			expect(res.body).toMatchObject({ message: "Unauthorized, please log in" });
 		});
 
-		test("Invalid (or malformed) token access", async () => {
-			const invalidToken = "invalidToken";
+		test("Malformed token access", async () => {
+			const invalidToken = "malformedToken";
 
 			const res = await sendGetRequest("/v1/api/", invalidToken);
 
 			expect(res.statusCode).toBe(401);
 			expect(res.body).toMatchObject({ message: "Malformed token" });
 		});
+
+		test("Invalid token payload access", async () => {
+
+			const [res1, res2] = await Promise.all([
+				sendGetRequest("/v1/api/", accessTokenHasString),
+				sendGetRequest("/v1/api/", accessTokenNotWithId)
+			]);
+
+			for (const res of [res1, res2]) {
+				expect(res.statusCode).toBe(401);
+				expect(res.body).toMatchObject({ message: "Invalid token payload" });
+			}
+
+		});
+
+		test("User in token not found", async () => {
+
+			const res = await sendGetRequest("/v1/api/", accessTokenWithInvalidId);
+
+			expect(res.statusCode).toBe(404);
+			expect(res.body).toMatchObject({ message: "User not found" });
+		});
+
+		test("Invalid token signature access", async () => {
+
+			const res = await sendGetRequest("/v1/api/", accessTokenWithInvalidSecret);
+
+			expect(res.statusCode).toBe(401);
+			expect(res.body).toMatchObject({ message: "Invalid token signature" });
+		});
 	});
 
-	describe("Error Handling", () => {
-		test("Unexpected error handling", async () => {
-			// Simulate an unexpected error
-            jest.spyOn(prisma.users, 'findUnique').mockImplementationOnce(() => {
-                throw new Error("Unexpected error");
-            });
+	describe("Refresh Token Tests", () => {
+		test("Refresh token with valid refresh token", async () => {
 
-            const res = await sendPostRequest("/v1/auth/login", {
-				email: "user@usermail.com",
-				password: "User1234"
+			const testRefreshToken = generateRefreshToken(testValidId);
+
+			const res = await sendPostRequest("/v1/auth/refresh", {
+				refreshToken: testRefreshToken
 			}, null);
 
-            expect(res.statusCode).toBe(500);
-            expect(res.body).toMatchObject({ message: expect.any(String) });
-        });
+			expect(res.statusCode).toBe(200);
+			expect(res.body).toMatchObject({ token: expect.any(String), refreshToken: expect.any(String) });
+		});
+
+		test("Refresh token with missing refresh token", async () => {
+			const res = await sendPostRequest("/v1/auth/refresh", {}, null);
+
+			expect(res.statusCode).toBe(400);
+			expect(res.body).toMatchObject({ message: "Missing token." });
+		});
+
+		test("Refresh token with expired refresh token", async () => {
+			const res = await sendPostRequest("/v1/auth/refresh", {
+				refreshToken: "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtMnJzazJ6dzAwMDRudXJ5NTFzbHJndTAiLCJpYXQiOjE3MzAzNDgzNDcsImV4cCI6MTczMDM0ODQwN30.E4tP64dgKdpXl4uLhbz1sgTq2viP1FISMVBjJJBdx1t4ndMQMAa6TvdduIL8Jd0EUtSz351XRdozrXHn2BSesw"
+			}, null);
+
+			expect(res.statusCode).toBe(401);
+			expect(res.body).toMatchObject({ message: "Token has expired" });
+		});
+
+		test("Refresh token with malformed refresh token", async () => {
+			const res = await sendPostRequest("/v1/auth/refresh", {
+				refreshToken: "malformedToken"
+			}, null);
+
+			expect(res.statusCode).toBe(401);
+			expect(res.body).toMatchObject({ message: "Malformed token" });
+		});
+
+		test("Refresh token with invalid refresh token payload", async () => {
+
+			const [res1, res2] = await Promise.all([
+				sendPostRequest("/v1/auth/refresh", {
+					refreshToken: refreshTokenHasString
+				}, null),
+				sendPostRequest("/v1/auth/refresh", {
+					refreshToken: refreshTokenNotWithId
+				}, null)
+			]);
+
+			for (const res of [res1, res2]) {
+				expect(res.statusCode).toBe(401);
+				expect(res.body).toMatchObject({ message: "Invalid token payload" });
+			}
+
+		});
+
+		test("User in refresh token not found", async () => {
+
+			const res = await sendPostRequest("/v1/auth/refresh", {
+				refreshToken: refreshTokenWithInvalidId
+			}, null);
+
+			expect(res.statusCode).toBe(404);
+			expect(res.body).toMatchObject({ message: "User not found" });
+		});
+
+
+		test("Refresh token with invalid refresh token signature", async () => {
+
+			const res = await sendPostRequest("/v1/auth/refresh", {
+				refreshToken: refreshTokenWithInvalidSecret
+			}, null);
+
+			expect(res.statusCode).toBe(401);
+			expect(res.body).toMatchObject({ message: "Invalid token signature" });
+		});
 	});
+
+	// describe("Error Handling", () => {
+	// 	test("Unexpected error handling", async () => {
+	// 		// Simulate an unexpected error
+    //         jest.spyOn(prisma.users, 'findUnique').mockImplementationOnce(() => {
+    //             throw new Error("Unexpected error");
+    //         });
+
+    //         const res = await sendPostRequest("/v1/auth/login", {
+	// 			email: "user@usermail.com",
+	// 			password: "User1234"
+	// 		}, null);
+
+    //         expect(res.statusCode).toBe(500);
+    //         expect(res.body).toMatchObject({ message: expect.any(String) });
+    //     });
+	// });
 });

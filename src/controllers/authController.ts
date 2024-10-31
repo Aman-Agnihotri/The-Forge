@@ -212,6 +212,10 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
             logger.warn("Refresh token expired: " + error.message);
             return res.status(401).json({ message: "Token has expired" });
 
+        } else if (error instanceof Error && error.message === 'invalid signature'){
+            logger.warn("Invalid refresh token signature: " + error.message);
+            return res.status(401).json({ message: "Invalid token signature" });
+            
         } else if (error instanceof JsonWebTokenError) {
             logger.warn("Malformed refresh token: " + error.message);
             return res.status(401).json({ message: "Malformed token" });

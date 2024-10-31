@@ -6,7 +6,7 @@ import { generateToken } from "../utils/jwt";
 import { loginUser, registerUser, refreshToken } from "../controllers/authController";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import logger from "../services/logger";
-import { loginRateLimiter, registrationRateLimiter, tokenRefreshRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter } from "../middlewares/rateLimitMiddleware";
+import { loginRateLimiter, registrationRateLimiter, tokenRefreshRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter, oauthUnlinkingRateLimiter } from "../middlewares/rateLimitMiddleware";
 
 const router = Router();
 
@@ -324,11 +324,13 @@ router.get("/:provider/callback", (req, res, next) => {
  *         description: Cannot unlink the last provider.
  *       404:
  *         description: No linked provider found.
+ *       429:
+ *         description: Too many unlinks (rate-limited).
  *       500:
  *         description: An error occurred while unlinking the provider.
  */
 
-router.delete("/unlink/:provider", authenticateUser, async (req, res, next) => {
+router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, async (req, res, next) => {
     const provider = req.params.provider;
 
     if (!PROVIDERS.includes(provider)) {

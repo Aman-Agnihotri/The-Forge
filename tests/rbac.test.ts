@@ -66,7 +66,7 @@ const sendPutRequest = async (endpoint: string, body: any, token: string | null)
 		.put(endpoint)
 		.send(body)
 		.set('Authorization', token ? `Bearer ${token}` : '')
-		.set('X-Forwarded-For', testIP); // Simulate same IP
+		.set('X-Forwarded-For', testIP);
 	return res;
 }
 
@@ -74,7 +74,7 @@ const sendGetRequest = async (endpoint: string, token: string | null) => {
 	const res = await request(app)
 		.get(endpoint)
 		.set('Authorization', token ? `Bearer ${token}` : '')
-		.set('X-Forwarded-For', testIP); // Simulate same IP
+		.set('X-Forwarded-For', testIP);
 	return res;
 }
 
@@ -88,10 +88,10 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
         
         test('Admin should access admin-only route', async () => {
 
-            const res = await sendGetRequest('/v1/api/users', tokens.admin);  // Admin-only route
+            const res = await sendGetRequest('/v1/api/users', tokens.admin);
 
-            expect(res.status).toBe(200); // Successful access returns status 200
-            expect(res.body).toHaveProperty("length", 4); // Assuming 4 users are returned
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty("length", 4);
         });
 
         test('User should be denied access to admin-only route', async () => {
@@ -103,7 +103,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
         });
 
         test('Unauthenticated user should be denied access to admin-only route', async () => {
-            const res = await sendGetRequest('/v1/api/users', null); // No auth header
+            const res = await sendGetRequest('/v1/api/users', null);
             
             expect(res.status).toBe(401);
             expect(res.body.message).toBe('Unauthorized, please log in');
@@ -114,7 +114,7 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
         
         test('Admin should access route accessible to admin or user', async () => {
 
-            const res = await sendGetRequest(`/v1/api/users/${mockUsers[0].id}`, tokens.admin);  // Route accessible to admin and user
+            const res = await sendGetRequest(`/v1/api/users/${mockUsers[0].id}`, tokens.admin);
             
             expect(res.status).toBe(200); 
             expect(res.body).toHaveProperty("id");
@@ -141,11 +141,11 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
 
         test('Admin should modify user role successfully', async () => {
 
-            const res = await sendPutRequest(`/v1/api/users/${mockUsers[1].id}`, { role_name: 'admin' }, tokens.admin);  // Endpoint for updating roles
+            const res = await sendPutRequest(`/v1/api/users/${mockUsers[1].id}`, { role_name: 'admin' }, tokens.admin);
                         
             expect(res.status).toBe(200);
             expect(res.body).toHaveProperty("id");
-            expect(mockUsers[1].roles[1].role.name).toBe('admin'); // Confirm role change
+            expect(mockUsers[1].roles[1].role.name).toBe('admin');
 
             // Refresh token for the modified user
             tokens.user1 = generateToken(mockUsers[1].id);
@@ -155,7 +155,8 @@ describe('Role-Based Access Control (RBAC) Tests', () => {
 
             const res = await sendGetRequest('/v1/api/users', tokens.user1);
             
-            expect(res.status).toBe(200); // Expect success as user now has admin role
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty("length", 4);
         });
 
         test('Non-admin user should be denied role modification access', async () => {
