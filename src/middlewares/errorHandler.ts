@@ -13,6 +13,7 @@ import { Request, Response, NextFunction } from 'express';
  * @param {NextFunction} next - The next middleware function in the chain
  */
 const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+    
     logger.error(`Error occurred: ${err.message}`, {
         method: req.method,
         path: req.originalUrl,

@@ -540,21 +540,5 @@ describe("JWT Authentication Tests", () => {
 			expect(res.body).toMatchObject({ message: "Invalid token signature" });
 		});
 	});
-
-	// describe("Error Handling", () => {
-	// 	test("Unexpected error handling", async () => {
-	// 		// Simulate an unexpected error
-    //         jest.spyOn(prisma.users, 'findUnique').mockImplementationOnce(() => {
-    //             throw new Error("Unexpected error");
-    //         });
-
-    //         const res = await sendPostRequest("/v1/auth/login", {
-	// 			email: "user@usermail.com",
-	// 			password: "User1234"
-	// 		}, null);
-
-    //         expect(res.statusCode).toBe(500);
-    //         expect(res.body).toMatchObject({ message: expect.any(String) });
-    //     });
-	// });
+	
 });
