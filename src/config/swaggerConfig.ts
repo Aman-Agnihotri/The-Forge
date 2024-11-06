@@ -46,5 +46,5 @@ export const setupSwagger = (app: Express) => {
         customCss: swaggerTheme.getBuffer(SwaggerThemeNameEnum.ONE_DARK),
         swaggerOptions: { persistAuthorization: true } 
     }));
-    logger.info('Swagger documentation available at /api-docs');
+    logger.debug('Swagger documentation available at /api-docs');
 };

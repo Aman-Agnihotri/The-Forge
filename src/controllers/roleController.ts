@@ -30,7 +30,7 @@ export const getAllRoles = async (req: Request, res: Response, next: NextFunctio
                 } 
             }
         });
-        logger.info('Roles fetched successfully');
+        logger.debug('Roles fetched successfully.');
         res.json(roles);
         return;
     } catch (error) {
@@ -53,8 +53,8 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
     const { id } = req.params;
 
     if (!validateRoleId(id)) {
-        logger.warn(`Invalid role ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid role ID format' });
+        logger.info(`Invalid role ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid role ID format.' });
         return;
     }
 
@@ -78,12 +78,12 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
             }
         })
         if (!role) {
-            logger.warn(`Role with id '${id}' not found`);
-            res.status(404).json({ message: 'Role not found' });
+            logger.info(`Role with id '${id}' not found.`);
+            res.status(404).json({ message: 'Role not found.' });
             return;
         }
 
-        logger.info(`Role with id '${id}' fetched successfully`);
+        logger.debug(`Role with id '${id}' fetched successfully.`);
         res.json(role);
         return;
     } catch (error) {
@@ -106,7 +106,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     const parseResult = roleActionSchema.safeParse(req.body);
 
     if (!parseResult.success) {
-        logger.warn("Role creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        logger.info("Role creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
         res.status(400).json({ message: parseResult.error.errors[0].message });
         return;
     }
@@ -118,8 +118,8 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
         // Check if the role already exists
         const role = await prisma.roles.findUnique({ where: { name } });
         if (role) {
-            logger.warn(`Role '${name}' already exists`);
-            res.status(409).json({ message: 'Role already exists' });
+            logger.info(`Role '${name}' already exists.`);
+            res.status(409).json({ message: 'Role already exists.' });
             return;
         }
 
@@ -132,7 +132,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        logger.info(`Role '${newRole.name}' created successfully`);
+        logger.debug(`Role '${newRole.name}' created successfully.`);
 
         res.status(201).json(newRole);
         return;
@@ -156,15 +156,15 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     if (!validateRoleId(id)) {
-        logger.warn(`Invalid role ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid role ID format' });
+        logger.info(`Invalid role ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid role ID format.' });
         return;
     }
 
     const parseResult = roleActionSchema.safeParse(req.body);
 
     if (!parseResult.success) {
-        logger.warn("Role update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        logger.info("Role update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
         res.status(400).json({ message: parseResult.error.errors[0].message });
         return;
     }
@@ -192,12 +192,12 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
         });
 
         if (!updatedRole) {
-            logger.warn(`Role with id '${id}' not found`);
-            res.status(404).json({ message: 'Role not found' });
+            logger.info(`Role with id '${id}' not found.`);
+            res.status(404).json({ message: 'Role not found.' });
             return;
         }
 
-        logger.info(`Role with id '${id}' updated successfully`);
+        logger.debug(`Role with id '${id}' updated successfully.`);
         res.json(updatedRole);
         return;
     } catch (error) {
@@ -220,8 +220,8 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     if (!validateRoleId(id)) {
-        logger.warn(`Invalid role ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid role ID format' });
+        logger.info(`Invalid role ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid role ID format.' });
         return;
     }
 
@@ -232,8 +232,8 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
         });
 
         if (!role) {
-            logger.warn(`Role with id '${id}' not found`);
-            res.status(404).json({ message: 'Role not found' });
+            logger.info(`Role with id '${id}' not found.`);
+            res.status(404).json({ message: 'Role not found.' });
             return;
         }
         
@@ -245,8 +245,8 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
         // Delete the role
         await prisma.roles.delete({ where: { id } });
             
-        logger.info(`Role '${role.name}' deleted successfully`);
-        res.json({ message: 'Role deleted successfully' });
+        logger.debug(`Role '${role.name}' deleted successfully.`);
+        res.json({ message: 'Role deleted successfully.' });
         return;
     } catch (error) {
         next({ message: "Encountered some error while deleting role.", error });

@@ -23,7 +23,7 @@ export function getClientId(provider: OAuthProvider) {
     if (clientId) {
         return clientId;
     } else {
-        logger.error(`Unsupported OAuth provider: ${provider}`);
+        logger.warn(`Unsupported OAuth provider: ${provider}`);
         throw new Error(`Unsupported OAuth provider: ${provider}`);
     }
 }
@@ -41,7 +41,7 @@ export function getClientSecret(provider: OAuthProvider) {
     if (clientSecret) {
         return clientSecret;
     } else {
-        logger.error(`Unsupported OAuth provider: ${provider}`);
+        logger.warn(`Unsupported OAuth provider: ${provider}`);
         throw new Error(`Unsupported OAuth provider: ${provider}`);
     }
 }
@@ -78,7 +78,7 @@ export const createStrategy = (provider: OAuthProvider, options: any, verify: an
     const Strategy = strategies[strategyName];
 
     if (!Strategy) {
-        logger.error(`Unsupported strategy provider: ${provider}`);
+        logger.warn(`Unsupported strategy provider: ${provider}`);
         throw new Error(`Unsupported strategy provider: ${provider}`);
     }
 

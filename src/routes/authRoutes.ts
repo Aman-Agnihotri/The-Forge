@@ -51,6 +51,8 @@ const router = Router();
  *                       type: string
  *                     username:
  *                       type: string
+ *       400:
+ *         description: Bad request or missing required fields.
  *       401:
  *         description: Invalid credentials.
  *       429:
@@ -60,7 +62,7 @@ const router = Router();
  */
 
 router.post("/login", loginRateLimiter, (req, res, next) => {
-    logger.info("Login attempt");
+    logger.debug("Login attempt");
     loginUser(req, res, next);
 });
 
@@ -122,7 +124,7 @@ router.post("/login", loginRateLimiter, (req, res, next) => {
  */
 
 router.post("/register", registrationRateLimiter, (req, res, next) => {
-    logger.info("Registration attempt");
+    logger.debug("Registration attempt");
     registerUser(req, res, next);
 });
 
@@ -156,21 +158,17 @@ router.post("/register", registrationRateLimiter, (req, res, next) => {
  *               properties:
  *                 token:
  *                   type: string
- *                 refreshToken:
- *                   type: string
  *       400:
- *         description: Missing refresh token.
+ *         description: Refresh token is missing from the request
  *       401:
- *         description: Invalid or malformed refresh token.
- *       403:
- *         description: User associated with the refresh token not found.
+ *         description: Invalid or expired refresh token
  *       429:
  *         description: Too many token refresh attempts (rate-limited).
  *       500:
  *         description: Internal server error.
  */
 router.post("/refresh", tokenRefreshRateLimiter, (req, res, next) => {
-    logger.info("Token refresh attempt");
+    logger.debug("Token refresh attempt");
     refreshToken(req, res, next);
 });
 
@@ -214,7 +212,7 @@ router.get("/:provider", (req, res, next) => {
     const provider = req.params.provider;
 
     if (!PROVIDERS.includes(provider)) {
-        logger.warn(`Invalid provider provided for authentication in request: ${provider}`);
+        logger.info(`Invalid provider provided for authentication in request: ${provider}`);
         res.status(400).json({ message: 'Invalid provider' });
         return;
     }
@@ -222,22 +220,22 @@ router.get("/:provider", (req, res, next) => {
     const isLinking = req.query.linking === 'true';
     const token = req.query.token as string; // Extract the token from the query parameter
 
-    logger.info(`Processing OAuth request for provider: ${provider}, isLinking: ${isLinking}`);
+    logger.debug(`Processing OAuth request for provider: ${provider}, isLinking: ${isLinking}`);
 
     if (isLinking) {
         if (!token) {
-            logger.warn(`Missing token in request for provider linking: ${provider}`);
+            logger.info(`Missing token in request for provider linking: ${provider}`);
             res.status(400).json({ message: 'Missing token' });
             return;
         }
 
         // Store the token in the state parameter for use in the callback
-        logger.info(`Starting OAuth process for provider linking: ${provider}, token: ${token}`);
+        logger.debug(`Starting OAuth process for provider linking: ${provider}, token: ${token}`);
 
         return oauthLinkingRateLimiter(req, res, () => passport.authenticate(provider)(req, res, next));
 
     } else {
-        logger.info(`Starting OAuth process for provider authentication: ${provider}`);
+        logger.debug(`Starting OAuth process for provider authentication: ${provider}`);
 
         return oauthLoginRateLimiter(req, res, () => passport.authenticate(provider)(req, res, next));
     }
@@ -274,20 +272,20 @@ router.get("/:provider/callback", (req, res, next) => {
         if(err){
             try {
                 const error = JSON.parse(err);
-                logger.warn(`Error message: ${error["message"]}\nError status: ${error["status"]}`);
+                logger.info(`Error message: ${error["message"]}\nError status: ${error["status"]}`);
                 return res.status(error.status).send(error.message);
             } catch (e) {
                 logger.error(`Error in parsing error message: ${e}`);
                 next({message: "Error in parsing error message in the OAuth callback", error: e });
             }
         } else if(user && 'id' in user) {
-            logger.info(`Found user: ${user}`);
+            logger.debug(`Found user: ${user}`);
             let token: string;
 
             //If token is returned in the info parameter, reuse it. Else generate a new one
             if (info.length > 5) {
                 token = info;
-                logger.info(`Found token in callback: ${token}`);
+                logger.debug(`Found token in callback: ${token}`);
             } else {
                 token = generateToken(user.id as string);
             }
@@ -295,7 +293,7 @@ router.get("/:provider/callback", (req, res, next) => {
             // Ensure to sanitize user info before including in the redirect
             return res.redirect(`${HOST_UI_URL}?token=${token}&user=${JSON.stringify({ id: user.id, username: user.username })}`); // Redirect with token and user id
         } else {
-            logger.warn('User information is missing');
+            logger.info('User information is missing');
             return res.status(400).send('User information is missing');
         }
     })(req, res, next);
@@ -334,14 +332,14 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
     const provider = req.params.provider;
 
     if (!PROVIDERS.includes(provider)) {
-        logger.warn(`Invalid provider provided for unlinking in request: ${provider}`);
+        logger.info(`Invalid provider provided for unlinking in request: ${provider}`);
         res.status(400).json({ message: 'Invalid provider' });
         return;
     }
 
     const userId = (req as any).user.id;
 
-    logger.info(`Unlinking provider: ${provider} for user: ${userId}`);
+    logger.debug(`Unlinking provider: ${provider} for user: ${userId}`);
 
     try {
         // Check if the provider is linked to the user
@@ -353,7 +351,7 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
         });
 
         if (!existingProvider) {
-            logger.warn(`No linked ${provider} account found for user: ${userId}`);
+            logger.info(`No linked ${provider} account found for user: ${userId}`);
             res.status(404).json({ message: `No linked ${provider} account found for this user.` });
             return;
         }
@@ -365,7 +363,7 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
 
         const user = await prisma.users.findUnique({ where: { id: userId } });
         if (!user?.password && otherProviders === 0) {
-            logger.warn(`Cannot unlink the last provider for user: ${userId}`);
+            logger.info(`Cannot unlink the last provider for user: ${userId}`);
             res.status(400).json({ message: 'Cannot unlink the last provider. Add a password or another provider before unlinking.' });
             return;
         }
@@ -377,7 +375,7 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
             }
         });
 
-        logger.info(`${provider} account unlinked successfully for user: ${userId}`);
+        logger.debug(`${provider} account unlinked successfully for user: ${userId}`);
         res.json({ message: `${provider} account unlinked successfully.` });
         return;
     } catch (error) {

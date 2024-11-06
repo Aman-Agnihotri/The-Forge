@@ -4,7 +4,7 @@ import { prisma } from '../src/config/prisma';
 import { rateLimitBypassIp } from '../src/utils/constants';
 import { Prisma } from '@prisma/client';
 import { generateToken } from '../src/utils/jwt';
-import logger from '../src/services/logger'; // Import your logger
+import logger from '../src/services/logger';
 
 const testValidId = 'cm2rsk2zw0004nury51slrgu0';
 
@@ -50,7 +50,7 @@ describe('Error Handling', () => {
       );
 
     // Spy on the logger.error method
-    const loggerSpy = jest.spyOn(logger, 'error');
+    const loggerSpy = jest.spyOn(logger, 'warn');
 
     // Mock prisma.users.findUnique to throw the Prisma error
     jest.spyOn(prisma.users, 'findUnique').mockImplementationOnce(() => {
@@ -62,7 +62,7 @@ describe('Error Handling', () => {
     // Assertions on the response
     expect(res.statusCode).toBe(500); // Since we haven't specifically handled P2003, it should return 500
     expect(res.body).toMatchObject({
-      message: 'An error occurred while token authentication.',
+      message: 'An error occurred during authentication.',
     });
 
     // Assertions on the logger
@@ -87,7 +87,7 @@ describe('Error Handling', () => {
     });
 
     // Spy on the logger.error method
-    const loggerSpy = jest.spyOn(logger, 'error');
+    const loggerSpy = jest.spyOn(logger, 'warn');
 
     const res = await sendPostRequest("/v1/auth/login", {
         email: "user@usermail.com",

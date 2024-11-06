@@ -25,7 +25,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (typeof decodedUser !== 'string' && 'id' in decodedUser) {
             loggedInUserId = decodedUser.id;
         } else {
-            logger.warn("Invalid token payload received during provider linking: " + JSON.stringify(decodedUser));
+            logger.info("Invalid token payload received during provider linking: " + JSON.stringify(decodedUser));
             return done(JSON.stringify({
                 message: 'Invalid token payload',
                 status: 401
@@ -35,7 +35,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         const user = await prisma.users.findUnique({ where: { id: loggedInUserId } });
 
         if (!user) {
-            logger.warn("User with ID '" + loggedInUserId + "' not found");
+            logger.info("User with ID '" + loggedInUserId + "' not found");
             return done(JSON.stringify({
                 message: 'User not found',
                 status: 404
@@ -51,7 +51,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         });
 
         if (existingProvider) {
-            logger.warn("User '" + loggedInUserId + "' tried to link an already linked provider: " + profile.provider);
+            logger.info("User '" + loggedInUserId + "' tried to link an already linked provider: " + profile.provider);
             return done(JSON.stringify({
                 message: 'This provider is already linked to your account',
                 status: 409
@@ -60,7 +60,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
 
         // Check if the OAuth account that the user is trying to link has the same email as the logged in user
         if (user.email !== profile.emails[0].value) {
-            logger.warn("User '" + loggedInUserId + "' tried to link a provider with a different email: " + profile.emails[0].value);
+            logger.info("User '" + loggedInUserId + "' tried to link a provider with a different email: " + profile.emails[0].value);
             return done(JSON.stringify({
                 message: 'The OAuth account that you are trying to link has a different email than your account',
                 status: 409
@@ -80,24 +80,24 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
             }
         });
 
-        logger.info("User '" + loggedInUserId + "' successfully linked provider: " + profile.provider);
+        logger.debug("User '" + loggedInUserId + "' successfully linked provider: " + profile.provider);
         return done(null, updatedUser, token);
         
     } catch (error) {
         if (error instanceof TokenExpiredError){
-            logger.warn("Token expired: " + error.message);
+            logger.info("Token expired: " + error.message);
             return done(JSON.stringify({
                 message: 'Token has expired',
                 status: 401
             }))
         } else if (error instanceof Error && error.message === 'invalid signature'){
-            logger.warn("Invalid token signature: " + error.message);
+            logger.info("Invalid token signature: " + error.message);
             return done(JSON.stringify({
                 message: 'Invalid token signature',
                 status: 401
             }))
         } else if (error instanceof JsonWebTokenError) {
-            logger.warn("Malformed token: " + error.message);
+            logger.info("Malformed token: " + error.message);
             return done(JSON.stringify({
                 message: 'Malformed token',
                 status: 401
@@ -131,13 +131,13 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
             // Check if this provider is already linked
             const existingProvider = existingUser.providers.find(provider => provider.providerName === profile.provider);
             if (!existingProvider) {
-                logger.warn(`Email conflict during OAuth authentication for email: ${email}`);
+                logger.info(`Email conflict during OAuth authentication for email: ${email}`);
                 return done(JSON.stringify({
                     message: 'An account with this email already exists',
                     status: 409
                 }));
             }
-            logger.info(`OAuth login successful for user: ${existingUser.id}`);
+            logger.debug(`OAuth login successful for user: ${existingUser.id}`);
             return done(null, existingUser); // Returning the existing user
         }
 
@@ -169,7 +169,7 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
             }
         });
 
-        logger.info(`New user created via OAuth with provider: ${profile.provider}, email: ${email}, role: ${defaultRole.name}`);
+        logger.debug(`New user created via OAuth with provider: ${profile.provider}, email: ${email}, role: ${defaultRole.name}`);
         return done(null, newUser);
     } catch (error) {
         return done(JSON.stringify({
@@ -202,7 +202,7 @@ const setupOAuthStrategy = (provider: OAuthProvider) => {
             async (request: any, accessToken: any, refreshToken: any, profile: any, done: (error: any, user?: any, info?: any) => void) => {
                 try {
 
-                    logger.info(`Processing OAuth callback for provider: ${profile.provider}`);
+                    logger.debug(`Processing OAuth callback for provider: ${profile.provider}`);
 
                     // Check if we are linking the provider to an existing user (JWT provided in state)
                     const token = request.query.state as string;
@@ -252,7 +252,7 @@ passport.deserializeUser( async (id: string, done) => {
     try {
         //Find user by id and deserialize the user from the session
         const user = await prisma.users.findUnique({ where: { id } })
-        logger.info(`Deserialized user: ${id}`);
+        logger.debug(`Deserialized user: ${id}`);
         done(null, user);
     } catch (error) {
         logger.error(`Error deserializing user: ${id} - ${(error as any).message}`);

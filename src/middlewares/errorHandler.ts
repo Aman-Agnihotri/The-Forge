@@ -21,7 +21,7 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
 
     if (isPrismaError) {
         // Log Prisma-specific error
-        logger.error(`Prisma Error [${err.error.code}]: ${err.error.message}`, {
+        logger.warn(`Prisma Error [${err.error.code}]: ${err.error.message}`, {
             method: req.method,
             path: req.originalUrl,
             status: err.status || 500,
@@ -32,7 +32,7 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
     } else {
 
         // Log general error
-        logger.error(`Error occurred: ${err.message}`, {
+        logger.warn(`Error occurred: ${err.message}`, {
             method: req.method,
             path: req.originalUrl,
             status: err.status || 500,

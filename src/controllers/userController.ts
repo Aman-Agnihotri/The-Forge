@@ -37,11 +37,11 @@ export const getAllUsers = async (req: Request, res: Response, next: NextFunctio
                 }
             }
         });
-        logger.info(`Users fetched successfully `)
+        logger.debug(`Users fetched successfully.`);
         res.json(users);
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while retrieving users', error});
+        next({ message: 'Encountered some error while retrieving users.', error});
     }
 };
 
@@ -77,11 +77,11 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
                 }
             }
         });
-        logger.info(`All users (including soft deleted) fetched successfully`)
+        logger.debug(`All users (including soft deleted) fetched successfully.`)
         res.json(users);
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while retrieving all users', error});
+        next({ message: 'Encountered some error while retrieving all users.', error});
     }
 };
 
@@ -100,8 +100,8 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
     const { id } = req.params;
 
     if (!validateUserId(id)) {
-        logger.warn(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format' });
+        logger.info(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format.' });
         return;
     }
 
@@ -130,16 +130,16 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User with user ID '${id}' not found. The user may be soft-deleted.`)
-            res.status(404).json({ message: 'User not found' });
+            logger.info(`User with user ID '${id}' not found. The user may be soft-deleted.`)
+            res.status(404).json({ message: 'User not found.' });
             return;
         }
 
-        logger.info(`User '${user.username}' fetched successfully`)
+        logger.debug(`User '${user.username}' fetched successfully.`)
         res.json(user);
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while retrieving user with the provided ID', error});
+        next({ message: 'Encountered some error while retrieving user with the provided ID.', error});
     }
 };
 
@@ -158,8 +158,8 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
     const { id } = req.params;
 
     if (!validateUserId(id)) {
-        logger.warn(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format' });
+        logger.info(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format.' });
         return;
     }
 
@@ -188,16 +188,16 @@ export const getUserByIdIncludingDeleted = async (req: Request, res: Response, n
         });
 
         if (!user) {
-            logger.warn(`User with user ID '${id}' not found`)
-            res.status(404).json({ message: 'User not found' });
+            logger.info(`User with user ID '${id}' not found.`)
+            res.status(404).json({ message: 'User not found.' });
             return;
         }
 
-        logger.info(`User '${user.username}' fetched successfully`)
+        logger.debug(`User '${user.username}' fetched successfully.`)
         res.json(user);
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while retrieving user with the provided ID', error});
+        next({ message: 'Encountered some error while retrieving user with the provided ID.', error});
     }
 };
 
@@ -217,7 +217,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     const parseResult = registerUserSchema.safeParse(req.body);
 
     if (!parseResult.success) {
-        logger.warn("User creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        logger.info("User creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
         res.status(400).json({ message: parseResult.error.errors[0].message });
         return;
     }
@@ -229,7 +229,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         const user = await prisma.users.findUnique({ where: { email } });
 
         if(user){
-            logger.warn("User creation failed. User already exists with email address: " + email);
+            logger.info("User creation failed. User already exists with email address: " + email);
             res.status(409).json({ message: "User already exists with provided email address." });
             return;
         }
@@ -242,8 +242,8 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
                 throw new Error("Default role '" + role_name + "' not found.");
             }
 
-            logger.warn(`User creation failed. Role '${role_name}' does not exist.`);
-            res.status(404).json({ message: 'Role does not exist' });
+            logger.info(`User creation failed. Role '${role_name}' does not exist.`);
+            res.status(404).json({ message: 'Role does not exist.' });
             return;
         }
 
@@ -282,11 +282,11 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         // Append the role to the newUser object
         newUser.roles = [{ role: role }];
 
-        logger.info(`User '${newUser.username}' created successfully`)
+        logger.debug(`User '${newUser.username}' created successfully.`)
         res.status(201).json(newUser);
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while creating user', error});
+        next({ message: 'Encountered some error while creating user.', error});
     }
 };
 
@@ -306,15 +306,15 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     if (!validateUserId(id)) {
-        logger.warn(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format' });
+        logger.info(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format.' });
         return;
     }
 
     const parseResult = updateUserSchema.safeParse(req.body);
 
     if (!parseResult.success) {
-        logger.warn("User update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
+        logger.info("User update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
         res.status(400).json({ message: parseResult.error.errors[0].message });
         return;
     }
@@ -328,8 +328,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         const userToUpdate = await prisma.users.findUnique({ where: { id } });
 
         if (!userToUpdate) {
-            logger.warn(`User update failed. User with id '${id}' not found.`);
-            res.status(404).json({ message: 'User not found' });
+            logger.info(`User update failed. User with id '${id}' not found.`);
+            res.status(404).json({ message: 'User not found.' });
             return;
         }
 
@@ -337,7 +337,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         const isAdmin = requestingUser.roles.every((role: any) => role.role.name === 'admin');
 
         if (!isAdmin && id !== requestingUser.id) {
-            logger.warn(`User update failed. Requesting user does not have permission to update this user. The user with id '${requestingUser.id}' is trying to update user with id '${id}'.`);
+            logger.info(`User update failed. Requesting user does not have permission to update this user. The user with id '${requestingUser.id}' is trying to update user with id '${id}'.`);
             res.status(403).json({ message: 'You do not have permission to update this user. Please contact an admin for additional help.' });
             return;
         }
@@ -355,11 +355,11 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         if(password){
             if (id === requestingUser.id) {
                 userUpdateData.password = await hashPassword(password);
-                logger.info(`User with id '${id}' is updating their own password.`);
+                logger.debug(`User with id '${id}' is updating their own password.`);
 
             } else if(isAdmin) {
                 userUpdateData.password = await hashPassword(password);
-                logger.info(`User with id '${requestingUser.id}' is an admin and is updating the password of user with id '${id}'.`);
+                logger.debug(`User with id '${requestingUser.id}' is an admin and is updating the password of user with id '${id}'.`);
             }
         }
 
@@ -372,8 +372,8 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
                 if (role_name === DEFAULT_ROLE) {
                     throw new Error("Default role '" + role_name + "' not found.");
                 }
-                logger.warn(`User update failed. Role '${role_name}' does not exist.`);
-                res.status(404).json({ message: 'Role does not exist' });
+                logger.info(`User update failed. Role '${role_name}' does not exist.`);
+                res.status(404).json({ message: 'Role does not exist.' });
                 return;
             }
 
@@ -397,7 +397,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
                 });
             }
         } else {
-            logger.warn(`User with id '${requestingUser.id} tried to update their own role. This action is not allowed.`);
+            logger.info(`User with id '${requestingUser.id}' tried to update their own role. This action is not allowed.`);
             res.status(403).json({ message: 'Self role update is not allowed.' });
             return;
         }
@@ -421,11 +421,11 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        logger.info(`User '${updatedUser.username}' updated successfully`)
+        logger.debug(`User '${updatedUser.username}' updated successfully.`)
         res.json(updatedUser);
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while updating user', error });
+        next({ message: 'Encountered some error while updating user.', error });
     }
 };
 
@@ -444,8 +444,8 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     if (!validateUserId(id)) {
-        logger.warn(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format' });
+        logger.info(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format.' });
         return;
     }
 
@@ -456,12 +456,12 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         });
 
         if (!user) {
-            logger.warn(`User delete failed. User with id '${id}' not found.`);
-            res.status(404).json({ message: 'User not found' });
+            logger.info(`User delete failed. User with id '${id}' not found.`);
+            res.status(404).json({ message: 'User not found.' });
             return;
         } else if (user.deletedAt) {
-            logger.warn(`User delete failed. User with id '${id}' is already deleted.`);
-            res.status(400).json({ message: 'User is already deleted' });
+            logger.info(`User delete failed. User with id '${id}' is already deleted.`);
+            res.status(400).json({ message: 'User is already deleted.' });
             return;
         }
 
@@ -470,11 +470,11 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
             data: { deletedAt: new Date() } // Mark user as deleted by setting the timestamp
         });
 
-        logger.info(`User with id '${id}' deleted successfully`);
-        res.json({ message: 'User deleted successfully' });
+        logger.debug(`User with id '${id}' deleted successfully.`);
+        res.json({ message: 'User deleted successfully.' });
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while deleting user', error });
+        next({ message: 'Encountered some error while deleting user.', error });
     }
 };
 
@@ -493,8 +493,8 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
     const { id } = req.params;
 
     if (!validateUserId(id)) {
-        logger.warn(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format' });
+        logger.info(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format.' });
         return;
     }
 
@@ -506,12 +506,12 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
         });
 
         if (!user) {
-            logger.warn(`User restore failed. User with id '${id}' not found.`);
-            res.status(404).json({ message: 'User not found' });
+            logger.info(`User restore failed. User with id '${id}' not found.`);
+            res.status(404).json({ message: 'User not found.' });
             return;
         } else if (!user.deletedAt) {
-            logger.warn(`User restore failed. User with id '${id}' is not soft-deleted.`);
-            res.status(400).json({ message: 'User is not soft-deleted' });
+            logger.info(`User restore failed. User with id '${id}' is not soft-deleted.`);
+            res.status(400).json({ message: 'User is not soft-deleted.' });
             return;
         }
 
@@ -521,11 +521,11 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
             data: { deletedAt: null }
         });
 
-        logger.info(`User with id '${id}' restored successfully`);
-        res.json({ message: 'User restored successfully' });
+        logger.debug(`User with id '${id}' restored successfully.`);
+        res.json({ message: 'User restored successfully.' });
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while restoring user', error });
+        next({ message: 'Encountered some error while restoring user.', error });
     }
 };
 
@@ -544,8 +544,8 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
     const { id } = req.params;
 
     if (!validateUserId(id)) {
-        logger.warn(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format' });
+        logger.info(`Invalid user ID format: ${id}`)
+        res.status(400).json({ message: 'Invalid user ID format.' });
         return;
     }
 
@@ -556,8 +556,8 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
         });
 
         if (!user) {
-            logger.warn(`User permanent deletion failed. User with id '${id}' not found.`);
-            res.status(404).json({ message: 'User not found' });
+            logger.info(`User permanent deletion failed. User with id '${id}' not found.`);
+            res.status(404).json({ message: 'User not found.' });
             return;
         }
 
@@ -576,11 +576,11 @@ export const permanentlyDeleteUser = async (req: Request, res: Response, next: N
             where: { id },
         });
 
-        logger.info(`User with id '${id}' permanently deleted successfully`);
-        res.json({ message: 'User permanently deleted successfully' });
+        logger.debug(`User with id '${id}' permanently deleted successfully.`);
+        res.json({ message: 'User permanently deleted successfully.' });
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while permanently deleting user', error });
+        next({ message: 'Encountered some error while permanently deleting user.', error });
     }
 };
 
@@ -601,8 +601,8 @@ export const bulkPermanentlyDeleteUsers = async (req: Request, res: Response, ne
     if ((!Array.isArray(userIds) || userIds.length === 0) && 
         (!Array.isArray(emails) || emails.length === 0) && 
         !emailPattern) {
-        logger.warn(`Bulk permanent deletion failed. No user IDs or emails provided.`);
-        res.status(400).json({ message: 'No user IDs or emails provided' });
+        logger.info(`Bulk permanent deletion failed. No user IDs or emails provided.`);
+        res.status(400).json({ message: 'No user IDs or emails provided.' });
         return;
     }
 
@@ -616,8 +616,8 @@ export const bulkPermanentlyDeleteUsers = async (req: Request, res: Response, ne
             });
 
             if (users.length !== userIds.length) {
-                logger.warn(`Bulk permanent deletion failed. One or more users not found by IDs.`);
-                res.status(404).json({ message: 'One or more users not found by IDs' });
+                logger.info(`Bulk permanent deletion failed. One or more users not found by IDs.`);
+                res.status(404).json({ message: 'One or more users not found by IDs.' });
                 return;
             }
         } else if (Array.isArray(emails) && emails.length > 0) {
@@ -627,8 +627,8 @@ export const bulkPermanentlyDeleteUsers = async (req: Request, res: Response, ne
             });
 
             if (users.length !== emails.length) {
-                logger.warn(`Bulk permanent deletion failed. One or more users not found by emails.`);
-                res.status(404).json({ message: 'One or more users not found by emails' });
+                logger.info(`Bulk permanent deletion failed. One or more users not found by emails.`);
+                res.status(404).json({ message: 'One or more users not found by emails.' });
                 return;
             }
         } else if (emailPattern) {
@@ -638,8 +638,8 @@ export const bulkPermanentlyDeleteUsers = async (req: Request, res: Response, ne
             });
 
             if (users.length === 0) {
-                logger.warn(`Bulk permanent deletion failed. No users found matching the email pattern.`);
-                res.status(404).json({ message: 'No users found matching the email pattern' });
+                logger.info(`Bulk permanent deletion failed. No users found matching the email pattern.`);
+                res.status(404).json({ message: 'No users found matching the email pattern.' });
                 return;
             }
         }
@@ -661,10 +661,10 @@ export const bulkPermanentlyDeleteUsers = async (req: Request, res: Response, ne
             where: { id: { in: userIdsToDelete } },
         });
 
-        logger.info(`Users with IDs '${userIdsToDelete?.join(', ')}' permanently deleted successfully`);
-        res.json({ message: 'Users permanently deleted successfully' });
+        logger.debug(`Users with IDs '${userIdsToDelete?.join(', ')}' permanently deleted successfully.`);
+        res.json({ message: 'Users permanently deleted successfully.' });
         return;
     } catch (error) {
-        next({ message: 'Encountered some error while permanently deleting users', error });
+        next({ message: 'Encountered some error while permanently deleting users.', error });
     }
 };

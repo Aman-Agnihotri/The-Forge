@@ -18,7 +18,7 @@ const router = Router();
 
 // Middleware to log requests
 router.use((req, res, next) => {
-    logger.info(`Received ${req.method} request for ${req.url}`);
+    logger.debug(`Received ${req.method} request for ${req.url}`);
     next();
 });
 
@@ -75,7 +75,7 @@ router.use((req, res, next) => {
  *         description: Error retrieving users.
  */
 router.get('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Fetching all users...');
+    logger.debug('Fetching all users...');
     next();
 }, getAllUsers);
 
@@ -134,7 +134,7 @@ router.get('/', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error retrieving users.
  */
 router.get('/all', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Fetching all users including deleted...');
+    logger.debug('Fetching all users including deleted...');
     next();
 }, getAllUsersIncludingDeleted);
 
@@ -190,7 +190,7 @@ router.get('/all', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error retrieving user.
  */
 router.get('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
-    logger.info(`Fetching user by ID: ${req.params.id}`);
+    logger.debug(`Fetching user by ID: ${req.params.id}`);
     next();
 }, getUserById);
 
@@ -256,7 +256,7 @@ router.get('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
  *         description: Error retrieving user.
  */
 router.get('/all/:id/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Fetching user by ID including deleted: ${req.params.id}`);
+    logger.debug(`Fetching user by ID including deleted: ${req.params.id}`);
     next();
 }, getUserByIdIncludingDeleted);
 
@@ -319,7 +319,7 @@ router.get('/all/:id/', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error creating user.
  */
 router.post('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Creating a new user...');
+    logger.debug('Creating a new user...');
     next();
 }, createUser);
 
@@ -387,7 +387,7 @@ router.post('/', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error updating user.
  */
 router.put('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
-    logger.info(`Updating user by ID: ${req.params.id}`);
+    logger.debug(`Updating user by ID: ${req.params.id}`);
     next();
 }, updateUser);
 
@@ -417,7 +417,7 @@ router.put('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
  *         description: Error deleting user.
  */
 router.delete('/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Soft deleting user by ID: ${req.params.id}`);
+    logger.debug(`Soft deleting user by ID: ${req.params.id}`);
     next();
 }, deleteUser);
 
@@ -454,7 +454,7 @@ router.delete('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error restoring user.
  */
 router.put('/restore/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Restoring user by ID: ${req.params.id}`);
+    logger.debug(`Restoring user by ID: ${req.params.id}`);
     next();
 }, restoreUser);
 
@@ -489,7 +489,7 @@ router.put('/restore/:id', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error permanently deleting user.
  */
 router.delete('/permanent/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Permanently deleting user by ID: ${req.params.id}`);
+    logger.debug(`Permanently deleting user by ID: ${req.params.id}`);
     next();
 }, permanentlyDeleteUser);
 
@@ -543,7 +543,7 @@ router.delete('/permanent/:id', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error permanently deleting users.
  */
 router.delete('/bulk/permanent', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Permanently deleting multiple users...`);
+    logger.debug(`Permanently deleting multiple users...`);
     next();
 }, bulkPermanentlyDeleteUsers);
 

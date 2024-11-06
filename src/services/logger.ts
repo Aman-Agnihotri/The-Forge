@@ -1,4 +1,5 @@
 import pino from 'pino';
+import pinoPretty from 'pino-pretty';
 import createRotatingWriteStream from 'pino-rotating-file-stream';
 import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
@@ -33,36 +34,51 @@ createLogDirectories();
 
 // Define a rotating stream for Pino
 const rotatingStream = createRotatingWriteStream({
-    filename: 'server.log',
+    filename: `server-${new Date().toISOString().slice(0, 10)}.log`,
     path: pinoLogDir,
     interval: '1d', // Rotate logs daily
     maxFiles: 14, // Keep logs for 14 days
     compress: true, // Compress the old log files
 });
 
-// Pino configuration
-const pinoLogger = pino({
-    level: NODE_ENV === 'test' ? 'silent' : LOG_LEVEL ?? 'info',
-    timestamp: pino.stdTimeFunctions.isoTime,
-    transport: {
-        targets: [
-            {
-                target: 'pino-pretty', // Pretty logs for development
-                options: { colorize: true }
-            },
-            {
-                target: 'pino-pretty', // Pretty logs for production without colors
-                options: {
-                    ignore: 'pid,hostname',
-                    translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
-                    destination: path.join(pinoLogDir, 'server.log'),
-                    mkdir: true,
-                },
-                
-            }
-        ]
+// Create pretty print streams for both console and file
+const prettyStreamOptions = {
+  colorize: true, // Enable colors for console output
+  translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l", // Human readable timestamps
+  ignore: 'pid,hostname', // Hide pid and hostname
+};
+
+// Create pretty streams
+const consolePretty = pinoPretty({
+  ...prettyStreamOptions,
+  destination: process.stdout // Send to console
+});
+
+const filePretty = pinoPretty({
+  ...prettyStreamOptions,
+  colorize: false, // Disable colors for file output
+  destination: rotatingStream // Send to rotating file stream
+});
+  
+const streams = [
+    { 
+        level: NODE_ENV === 'test' ? 'silent' : LOG_LEVEL ?? 'info',
+        stream: consolePretty
     },
-}, rotatingStream);
+    { 
+        level: NODE_ENV === 'test' ? 'silent' : 'debug',
+        stream: filePretty
+    },
+];
+
+// Pino configuration
+const pinoLogger = pino(
+    {
+      level: 'debug', // Minimum level for logger
+      timestamp: pino.stdTimeFunctions.isoTime,
+    },
+    pino.multistream(streams)
+);
 
 // Define the log formatting options for Winston
 const { combine, timestamp, json, printf } = winston.format;
@@ -71,6 +87,7 @@ const timestampFormat = 'DD-MM-YYYY HH:mm:ss';
 // Define a daily rotate transport for Winston
 const dailyRotateFileTransport = new DailyRotateFile({
     filename: path.join(winstonLogDir, 'server-combined-%DATE%.log'),  // Log file name pattern
+    level: NODE_ENV === 'test' ? 'silent' : 'debug',                          // Log all messages with level 'debug' or higher
     datePattern: 'YYYY-MM-DD',               // Rotate daily with date in file name
     zippedArchive: true,                     // Compress the rotated logs
     maxSize: '20m',                          // Maximum log file size before rotation (e.g., 20 megabytes)
@@ -80,7 +97,7 @@ const dailyRotateFileTransport = new DailyRotateFile({
 // Define an error file transport for Winston
 const errorFileTransport = new DailyRotateFile({
     filename: path.join(winstonLogDir, 'server-error-%DATE%.log'),
-    level: 'error',                          // Log only error messages in this file
+    level: 'warn',                          // Log warn and higher messages in this file
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
     maxSize: '20m',
@@ -89,7 +106,7 @@ const errorFileTransport = new DailyRotateFile({
 
 // Winston configuration
 const winstonLogger = winston.createLogger({
-    level: NODE_ENV === 'test' ? 'off' : LOG_LEVEL ?? 'info',
+    level: 'debug',
     format: combine(
         timestamp({ format: timestampFormat }),
         json(), // Use JSON format by default
@@ -103,7 +120,9 @@ const winstonLogger = winston.createLogger({
         })
     ),
     transports: [
-        new winston.transports.Console(),
+        new winston.transports.Console({
+            level: NODE_ENV === 'test' ? 'off' : LOG_LEVEL ?? 'info',
+        }),
         dailyRotateFileTransport,
         errorFileTransport
     ],

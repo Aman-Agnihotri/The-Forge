@@ -10,7 +10,7 @@ import { useRateLimitMiddleware } from "../middlewares/rateLimitMiddleware";
 const router = Router();
 
 router.use((req, res, next) => {
-    logger.info(`Request received: ${req.method} ${req.url}`);
+    logger.debug(`Request received: ${req.method} ${req.url}`);
     next();
 });
 
@@ -62,7 +62,7 @@ router.get("/", async (req: any, res: any, next: any) => {
             } 
         });
 
-        logger.info(`User '${userinfo?.username}' accessed the protected route`);
+        logger.debug(`User '${userinfo?.username}' accessed the protected route`);
         res.json({ message: `Welcome to the secret club, ${userinfo?.username}!`, userinfo });
     } catch (error) {
         next({ message: "Error accessing protected route", error });

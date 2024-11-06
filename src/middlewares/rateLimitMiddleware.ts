@@ -20,7 +20,7 @@ export const createIpRateLimiter = (config = rateLimitConfig.ip) => rateLimit({
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
-        logger.warn(`IP rate limit exceeded for IP: ${req.ip}`);
+        logger.info(`IP rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
     }
 });
@@ -43,7 +43,7 @@ export const createLoginRateLimiter = (config = rateLimitConfig.login) => rateLi
     standardHeaders: true,
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
-        logger.warn(`Login rate limit exceeded for IP: ${req.ip}`);
+        logger.info(`Login rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
     }
 });
@@ -68,7 +68,7 @@ export const createRegistrationRateLimiter = (config = rateLimitConfig.registrat
     standardHeaders: true,
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
-        logger.warn(`Registration rate limit exceeded for IP: ${req.ip}`);
+        logger.info(`Registration rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
     }
 });
@@ -93,7 +93,7 @@ export const createTokenRefreshRateLimiter = (config = rateLimitConfig.token_ref
     standardHeaders: true,
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
-        logger.warn(`Token refresh rate limit exceeded for IP: ${req.ip}`);
+        logger.info(`Token refresh rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
     }
 });
@@ -118,7 +118,7 @@ export const createOauthLoginRateLimiter = (config = rateLimitConfig.oauth) => r
     message: "Too many login attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
-        logger.warn(`OAuth login rate limit exceeded for IP: ${req.ip}`);
+        logger.info(`OAuth login rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
     }
 });
@@ -143,7 +143,7 @@ export const createOauthLinkingRateLimiter = (config = rateLimitConfig.oauth) =>
     message: "Too many OAuth linking attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
-        logger.warn(`OAuth linking rate limit exceeded for IP: ${req.ip}`);
+        logger.info(`OAuth linking rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
     }
 });
@@ -168,7 +168,7 @@ export const createOauthUnlinkingRateLimiter = (config = rateLimitConfig.oauth) 
     message: "Too many OAuth unlinking attempts from this IP, please try again after " + config.windowMs / 1000 + " seconds.",
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
-        logger.warn(`OAuth unlinking rate limit exceeded for IP: ${req.ip}`);
+        logger.info(`OAuth unlinking rate limit exceeded for IP: ${req.ip}`);
         res.status(options.statusCode).json({ message: options.message });
     }
 });
@@ -202,13 +202,13 @@ export const useRateLimitMiddleware = async (req: Request, res: Response, next: 
 
     // Check if the request IP is in the bypass list
     if (rateLimitBypassIp.includes(req.ip as string)) {
-        logger.info(`Rate limit bypass for IP: ${req.ip}`);
+        logger.debug(`Rate limit bypass for IP: ${req.ip}`);
         return next();
     }
 
     if (!user.roles || user.roles.length === 0) {
-        logger.warn(`Access denied: User has no roles assigned. User ID: ${user.id}, IP: ${req.ip}`);
-        res.status(403).json({ message: 'Access denied: User has no roles assigned' });
+        logger.info(`Access denied: User has no roles assigned. User ID: ${user.id}, IP: ${req.ip}`);
+        res.status(403).json({ message: 'Access denied.' });
         return;
     }
 
@@ -225,7 +225,7 @@ export const useRateLimitMiddleware = async (req: Request, res: Response, next: 
     .then(() => {
         next();
     }).catch(() => {
-        logger.warn(`Rate limit exceeded for user ID: ${userID}, Role: ${role}, IP: ${req.ip}`);
+        logger.info(`Rate limit exceeded for user ID: ${userID}, Role: ${role}, IP: ${req.ip}`);
         return res.status(429).json({ message: `Too many requests, please try again after ${rateLimiter.msDuration / 1000} seconds.` });  // Limit exceeded
     });
 }

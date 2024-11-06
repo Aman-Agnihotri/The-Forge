@@ -37,11 +37,11 @@ app.get("/", (req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-    logger.info(`The Forge API is running on port ${PORT}.`);
+    logger.debug(`The Forge API is running on port ${PORT}.`);
 });
 
 process.on('SIGINT', () => {
-    logger.info('Server is shutting down gracefully');
+    logger.debug('Server is shutting down gracefully');
     process.exit(0);
 });
 

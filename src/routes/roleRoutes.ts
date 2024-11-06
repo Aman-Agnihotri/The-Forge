@@ -13,7 +13,7 @@ const router = Router();
 
 // Middleware to log requests
 router.use((req, res, next) => {
-    logger.info(`Received ${req.method} request for ${req.url}`);
+    logger.debug(`Received ${req.method} request for ${req.url}`);
     next();
 });
 
@@ -52,7 +52,7 @@ router.use((req, res, next) => {
  *         description: Error retrieving roles.
  */
 router.get('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Fetching all roles...');
+    logger.debug('Fetching all roles...');
     getAllRoles(req, res, next);
 });
 
@@ -98,7 +98,7 @@ router.get('/', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error retrieving role.
  */
 router.get('/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Fetching role with ID: ${req.params.id}`);
+    logger.debug(`Fetching role with ID: ${req.params.id}`);
     getRoleById(req, res, next);
 });
 
@@ -137,7 +137,7 @@ router.get('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error creating role.
  */
 router.post('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info('Creating a new role...');
+    logger.debug('Creating a new role...');
     createRole(req, res, next);
 });
 
@@ -185,7 +185,7 @@ router.post('/', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error updating role.
  */
 router.put('/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Updating role with ID: ${req.params.id}`);
+    logger.debug(`Updating role with ID: ${req.params.id}`);
     updateRole(req, res, next);
 });
 
@@ -213,7 +213,7 @@ router.put('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *         description: Error deleting role.
  */
 router.delete('/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.info(`Deleting role with ID: ${req.params.id}`);
+    logger.debug(`Deleting role with ID: ${req.params.id}`);
     deleteRole(req, res, next);
 });
 

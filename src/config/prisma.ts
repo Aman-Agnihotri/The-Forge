@@ -9,7 +9,7 @@ const provider = DATABASE_PROVIDER;
 const existingSchema = fs.readFileSync('prisma/schema.prisma', 'utf8');
 
 if (!existingSchema) {
-    logger.error('prisma/schema.prisma not found');
+    logger.warn('prisma/schema.prisma not found');
     throw new Error('prisma/schema.prisma not found');
 }
 
@@ -36,9 +36,9 @@ function getCurrentProvider(schema: string): string | null {
  */
 function generateClient() {
     try{
-        logger.info("Generating new Prisma Client...");
+        logger.debug("Generating new Prisma Client...");
         exec("npx prisma generate", { encoding: "utf8" });
-        logger.info("Prisma Client generated successfully.");
+        logger.debug("Prisma Client generated successfully.");
     } catch(err){
         logger.error("Fatal Error! Error generating Prisma Client: ", err);
         process.exit(1);
