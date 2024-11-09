@@ -1,4 +1,4 @@
-import logger from '../services/logger';
+import logger from '../utils/logger';
 import { Request, Response, NextFunction } from 'express';
 
 const prismaErrorCodePattern = /P\d{4}/;

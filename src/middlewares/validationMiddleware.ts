@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { roleActionSchema } from '../models/roleModel';
-import logger from '../services/logger';
+import logger from '../utils/logger';
 
 function validateId(id: string) {
     const cuidRegex = /^c[0-9a-z]{24}$/i;

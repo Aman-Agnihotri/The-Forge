@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, TokenExpiredError, JsonWebTokenError } from "../utils/jwt";
 import { prisma } from "../config/prisma";
-import logger from "../services/logger";
+import logger from "../utils/logger";
 
 /**
  * Middleware to verify JWT token and protect routes.

@@ -1,7 +1,7 @@
 import { RateLimiterMemory } from "rate-limiter-flexible";
 import rateLimit from "express-rate-limit";
 import { Request, Response, NextFunction } from "express";
-import logger from "../services/logger";
+import logger from "../utils/logger";
 import { rateLimitBypassIp, rateLimitConfig } from "../utils/constants";
 
 /**

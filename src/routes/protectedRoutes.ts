@@ -4,7 +4,7 @@ import { prisma } from "../config/prisma";
 import userRoutes from "./userRoutes";
 import roleRoutes from "./roleRoutes";
 
-import logger from "../services/logger";
+import logger from "../utils/logger";
 import { useRateLimitMiddleware } from "../middlewares/rateLimitMiddleware";
 
 const router = Router();

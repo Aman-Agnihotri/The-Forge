@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app, server } from '../../src/app';
 import { generateToken } from '../../src/utils/jwt';
 import { rateLimitBypassIp } from '../../src/utils/constants';
-import logger from '../../src/services/logger';
+import logger from '../../src/utils/logger';
 
 const testValidAdmin = 'cm2rsebh60000nurypn3p8i6r';
 const testValidUser = 'cm2rsk2zw0004nury51slrgu0';

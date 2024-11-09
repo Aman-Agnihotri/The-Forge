@@ -9,7 +9,7 @@ import {
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
 import { registerUserSchema, loginUserSchema } from "../models/userModel";
 import { prisma } from "../config/prisma";
-import logger from "../services/logger";
+import logger from "../utils/logger";
 import { DEFAULT_ROLE } from "../utils/constants";
 
 /**

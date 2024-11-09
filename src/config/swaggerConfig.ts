@@ -2,7 +2,7 @@ import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { SwaggerTheme, SwaggerThemeNameEnum } from 'swagger-themes';
 import { Express } from 'express';
-import logger from '../services/logger';
+import logger from '../utils/logger';
 import { HOST_API_URL, NODE_ENV } from '../utils/constants';
 
 const swaggerTheme = new SwaggerTheme();

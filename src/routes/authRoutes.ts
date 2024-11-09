@@ -5,7 +5,7 @@ import { PROVIDERS, HOST_UI_URL } from "../utils/constants";
 import { generateToken } from "../utils/jwt";
 import { loginUser, registerUser, refreshToken } from "../controllers/authController";
 import { authenticateUser } from "../middlewares/authMiddleware";
-import logger from "../services/logger";
+import logger from "../utils/logger";
 import { loginRateLimiter, registrationRateLimiter, tokenRefreshRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter, oauthUnlinkingRateLimiter } from "../middlewares/rateLimitMiddleware";
 
 const router = Router();

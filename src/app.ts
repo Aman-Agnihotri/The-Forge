@@ -9,7 +9,7 @@ import { ipRateLimiter } from "./middlewares/rateLimitMiddleware";
 import errorHandler from "./middlewares/errorHandler";
 import { authenticateUser } from "./middlewares/authMiddleware";
 
-import logger from "./services/logger";
+import logger from "./utils/logger";
 
 import { PORT, API_PATH } from "./utils/constants";
 

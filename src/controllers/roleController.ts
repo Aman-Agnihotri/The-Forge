@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { roleService } from '../services/roleService';
-import logger from '../services/logger';
+import logger from '../utils/logger';
 
 /**
  * Retrieves all roles with their associated users.

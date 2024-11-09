@@ -10,7 +10,7 @@ import {
     clientSecrets
 } from "./constants";
 
-import logger from "../services/logger";
+import logger from "./logger";
 
 /**
  * Returns the client ID for the specified OAuth provider.

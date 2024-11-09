@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
-import logger from '../services/logger';
+import logger from '../utils/logger';
 import { registerUserSchema, updateUserSchema } from '../models/userModel';
 import { DEFAULT_ROLE } from '../utils/constants';
 

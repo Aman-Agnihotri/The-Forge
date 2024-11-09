@@ -3,7 +3,7 @@ import { app, server } from '../../src/app';
 import { prisma } from '../../src/config/prisma';
 import { generateRefreshToken, generateToken } from '../../src/utils/jwt';
 import { rateLimitBypassIp } from '../../src/utils/constants';
-import logger from '../../src/services/logger';
+import logger from '../../src/utils/logger';
 
 const testValidId = 'cm2rsk2zw0004nury51slrgu0';
 

@@ -1,7 +1,7 @@
 import passport from "passport";
 import { prisma } from "../config/prisma";
 import { verifyToken, JsonWebTokenError, TokenExpiredError } from "../utils/jwt";
-import logger from "../services/logger";
+import logger from "../utils/logger";
 import { DEFAULT_ROLE, OAuthProvider, providerScopes, PROVIDERS } from "../utils/constants";
 
 import { getClientId, getClientSecret, getAuthCallbackURL, createStrategy } from "../utils/utils";

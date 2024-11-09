@@ -8,7 +8,7 @@ import {
 } from '../controllers/roleController';
 import { authorizeRoles } from '../middlewares/roleMiddleware';
 import { validateRoleBody, validateIdParam } from '../middlewares/validationMiddleware'; 
-import logger from '../services/logger';
+import logger from '../utils/logger';
 
 const router = Router();
 

@@ -2,7 +2,7 @@ import fs from "fs";
 import { PrismaClient } from "@prisma/client";
 import { exec } from "child_process";
 import { DATABASE_PROVIDER } from "../utils/constants";
-import logger from "../services/logger";
+import logger from "../utils/logger";
 
 const provider = DATABASE_PROVIDER;
 

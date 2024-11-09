@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app, server } from '../src/app';
 import { generateToken } from '../src/utils/jwt';
 import { testIP } from '../src/utils/constants';
-import logger from '../src/services/logger';
+import logger from '../src/utils/logger';
 
 // Mock user data for testing
 const mockUsers = [

@@ -13,7 +13,7 @@ import {
 } from "../controllers/userController";
 import { authorizeRoles } from "../middlewares/roleMiddleware";
 import { validateIdParam } from "../middlewares/validationMiddleware";
-import logger from "../services/logger";
+import logger from "../utils/logger";
 
 const router = Router();
 
