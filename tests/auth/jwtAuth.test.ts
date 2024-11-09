@@ -301,11 +301,11 @@ describe("JWT Authentication Tests", () => {
 				role_name: "ab"
 			}, null);
 
-			expect(loggerSpyInfo).toHaveBeenCalledWith(`User registration failed. Invalid request body.\nError: Role name must be at least 3 characters.`);
+			expect(loggerSpyInfo).toHaveBeenCalledWith(`User registration failed. Invalid request body.\nError: Role name must be at least 3 characters long.`);
 			expect(loggerSpyDebug).not.toHaveBeenCalled;
 
 			expect(res.statusCode).toBe(400);
-			expect(res.body).toMatchObject({ message: "Role name must be at least 3 characters." });
+			expect(res.body).toMatchObject({ message: "Role name must be at least 3 characters long." });
 		});
 
 		test("Register with invalid characters in role name", async () => {

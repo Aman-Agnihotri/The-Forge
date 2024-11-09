@@ -22,6 +22,7 @@ import { DEFAULT_ROLE } from "../utils/constants";
  * @returns {Promise<any>} A promise that resolves with the JWT and the user object.
  *
  * @throws {400} - The request body is invalid or the role name provided does not exist.
+ * @throws {404} - The role name provided does not exist.
  * @throws {409} - A user with the same email already exists.
  * @throws {500} - An error occurred while registering the user.
  */

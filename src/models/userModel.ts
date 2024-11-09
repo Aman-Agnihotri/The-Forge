@@ -26,7 +26,7 @@ export const registerUserSchema = z.object({
 
     role_name: z.string()
         .min(1, "Role name cannot be empty.")
-        .min(3, "Role name must be at least 3 characters.")
+        .min(3, "Role name must be at least 3 characters long.")
         .regex(/^[a-zA-Z]+$/, "Role name must contain only letters.")
         .max(10, "Role name above 10 characters is invalid.")
         .optional()
@@ -71,7 +71,7 @@ export const updateUserSchema = z.object({
 
     role_name: z.string()
         .min(1, "Role name cannot be empty.")
-        .min(3, "Role name must be at least 3 characters.")
+        .min(3, "Role name must be at least 3 characters long.")
         .regex(/^[a-zA-Z]+$/, "Role name must contain only letters.")
         .max(10, "Role name above 10 characters is invalid.")
         .optional(),

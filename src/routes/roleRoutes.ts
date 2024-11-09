@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { 
-    createRole, 
+    createRole,
     getAllRoles,
     getRoleById,
     updateRole,
@@ -48,6 +48,12 @@ router.use((req, res, next) => {
  *                           type: string
  *                         username:
  *                           type: string
+ *       401:
+ *         description: Unauthorized access.
+ *       403:
+ *         description: Forbidden access.
+ *       429:
+ *         description: Too many requests (rate-limited).
  *       500:
  *         description: Error retrieving roles.
  */
@@ -92,8 +98,16 @@ router.get('/', authorizeRoles(['admin']), (req, res, next) => {
  *                         type: string
  *                       username:
  *                         type: string
+ *       400:
+ *         description: Invalid role ID format.
+ *       401:
+ *         description: Unauthorized access.
+ *       403:
+ *         description: Forbidden access.
  *       404:
  *         description: Role not found.
+ *       429:
+ *         description: Too many requests (rate-limited).
  *       500:
  *         description: Error retrieving role.
  */
@@ -133,6 +147,14 @@ router.get('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *                   type: string
  *                 name:
  *                   type: string
+ *       400:
+ *         description: Invalid request body.
+ *       401:
+ *         description: Unauthorized access.
+ *       403:
+ *         description: Forbidden access.
+ *       429:
+ *         description: Too many requests (rate-limited).
  *       500:
  *         description: Error creating role.
  */
@@ -179,8 +201,18 @@ router.post('/', authorizeRoles(['admin']), (req, res, next) => {
  *                   type: string
  *                 name:
  *                   type: string
+ *       400:
+ *         description: Invalid ID format or invalid request body.
+ *       401:
+ *         description: Unauthorized access.
+ *       403:
+ *         description: Forbidden access.
  *       404:
  *         description: Role not found.
+ *       409:
+ *         description: Role with the updated name already exists.
+ *       429:
+ *         description: Too many requests (rate-limited).
  *       500:
  *         description: Error updating role.
  */
@@ -207,8 +239,16 @@ router.put('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *     responses:
  *       200:
  *         description: Role deleted successfully.
+ *       400:
+ *         description: Invalid ID format.
+ *       401:
+ *         description: Unauthorized access.
+ *       403:
+ *         description: Forbidden access.
  *       404:
  *         description: Role not found.
+ *       429:
+ *         description: Too many requests (rate-limited).
  *       500:
  *         description: Error deleting role.
  */

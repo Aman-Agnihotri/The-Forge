@@ -114,7 +114,9 @@ router.post("/login", loginRateLimiter, (req, res, next) => {
  *                     username:
  *                       type: string
  *       400:
- *         description: Missing required fields.
+ *         description: Bad request or missing required fields.
+ *       404:
+ *         description: Role does not exist.
  *       409:
  *         description: User already exists.
  *       429:

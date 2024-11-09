@@ -11,7 +11,8 @@
     "testjwt": "NODE_ENV=test jest --coverage --runInBand tests/auth/jwtAuth.test.ts",
     "testrbac": "NODE_ENV=test jest --coverage --runInBand tests/rbac.test.ts",
     "testrate": "NODE_ENV=test jest --coverage --runInBand tests/rateLimiting.test.ts",
-    "testerr": "NODE_ENV=test jest --coverage --runInBand tests/errorHandler.test.ts"
+    "testerr": "NODE_ENV=test jest --coverage --runInBand tests/errorHandler.test.ts",
+    "testRoleRoute": "NODE_ENV=test jest --coverage --runInBand tests/responses/roleRoutes.test.ts"
   },
   "keywords": [],
   "author": "Aman Agnihotri",

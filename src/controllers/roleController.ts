@@ -53,13 +53,12 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
     const { id } = req.params;
 
     if (!validateRoleId(id)) {
-        logger.info(`Invalid role ID format: ${id}`)
+        logger.info(`Role fetching failed. Invalid role ID format: ${id}`)
         res.status(400).json({ message: 'Invalid role ID format.' });
         return;
     }
 
     try {
-
         const role = await prisma.roles.findUnique({
             where: { id },
             select: { 
@@ -77,8 +76,9 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
                 } 
             }
         })
+
         if (!role) {
-            logger.info(`Role with id '${id}' not found.`);
+            logger.info(`Role fetching failed. Role with id '${id}' not found.`);
             res.status(404).json({ message: 'Role not found.' });
             return;
         }
@@ -116,9 +116,17 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
     try {
 
         // Check if the role already exists
-        const role = await prisma.roles.findUnique({ where: { name } });
+        const role = await prisma.roles.findFirst({ 
+            where: {
+                name: {
+                    equals: name,
+                    mode: 'insensitive'
+                }
+            } 
+        });
+
         if (role) {
-            logger.info(`Role '${name}' already exists.`);
+            logger.info(`Role creation failed. Role with name '${name}' already exists.`);
             res.status(409).json({ message: 'Role already exists.' });
             return;
         }
@@ -156,7 +164,7 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     if (!validateRoleId(id)) {
-        logger.info(`Invalid role ID format: ${id}`)
+        logger.info(`Role update failed. Invalid role ID format: ${id}`)
         res.status(400).json({ message: 'Invalid role ID format.' });
         return;
     }
@@ -172,6 +180,37 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
     const { name } = parseResult.data;
 
     try {
+        // Check if the role exists
+        const role = await prisma.roles.findUnique({ where: { id } });
+
+        if (!role) {
+            logger.info(`Role update failed. Role with id '${id}' not found.`);
+            res.status(404).json({ message: 'Role not found.' });
+            return;
+        }
+
+        if (role.name === name) {
+            logger.info(`Role with id '${id}' not updated. Role name is the same as before.`);
+            res.status(400).json({ message: 'Role name is the same as before.' });
+            return;
+        }
+
+        // Check if the new role name already exists
+        const existingRole = await prisma.roles.findFirst({
+            where: {
+                name: {
+                    equals: name,
+                    mode: 'insensitive'
+                }
+            }
+        });
+
+        if (existingRole) {
+            logger.info(`Role update failed. Role with name '${name}' already exists.`);
+            res.status(409).json({ message: 'Role already exists.' });
+            return;
+        }
+
         const updatedRole = await prisma.roles.update({
             where: { id },
             data: { name },
@@ -190,12 +229,6 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
                 } 
             }
         });
-
-        if (!updatedRole) {
-            logger.info(`Role with id '${id}' not found.`);
-            res.status(404).json({ message: 'Role not found.' });
-            return;
-        }
 
         logger.debug(`Role with id '${id}' updated successfully.`);
         res.json(updatedRole);
@@ -220,7 +253,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
 
     if (!validateRoleId(id)) {
-        logger.info(`Invalid role ID format: ${id}`)
+        logger.info(`Role deletion failed. Invalid role ID format: ${id}`)
         res.status(400).json({ message: 'Invalid role ID format.' });
         return;
     }
@@ -232,7 +265,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
         });
 
         if (!role) {
-            logger.info(`Role with id '${id}' not found.`);
+            logger.info(`Role deletion failed. Role with id '${id}' not found.`);
             res.status(404).json({ message: 'Role not found.' });
             return;
         }

@@ -27,7 +27,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         } else {
             logger.info("Invalid token payload received during provider linking: " + JSON.stringify(decodedUser));
             return done(JSON.stringify({
-                message: 'Invalid token payload',
+                message: 'Invalid or expired access token.',
                 status: 401
             }));
         }
@@ -37,8 +37,8 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (!user) {
             logger.info("User with ID '" + loggedInUserId + "' not found");
             return done(JSON.stringify({
-                message: 'User not found',
-                status: 404
+                message: 'Invalid or expired access token.',
+                status: 401
             }));
         }
 
@@ -53,7 +53,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (existingProvider) {
             logger.info("User '" + loggedInUserId + "' tried to link an already linked provider: " + profile.provider);
             return done(JSON.stringify({
-                message: 'This provider is already linked to your account',
+                message: 'This provider is already linked to this account',
                 status: 409
             }));
         }
@@ -87,19 +87,19 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (error instanceof TokenExpiredError){
             logger.info("Token expired: " + error.message);
             return done(JSON.stringify({
-                message: 'Token has expired',
+                message: 'Invalid or expired access token.',
                 status: 401
             }))
         } else if (error instanceof Error && error.message === 'invalid signature'){
             logger.info("Invalid token signature: " + error.message);
             return done(JSON.stringify({
-                message: 'Invalid token signature',
+                message: 'Invalid or expired access token.',
                 status: 401
             }))
         } else if (error instanceof JsonWebTokenError) {
             logger.info("Malformed token: " + error.message);
             return done(JSON.stringify({
-                message: 'Malformed token',
+                message: 'Invalid or expired access token.',
                 status: 401
             }))
         } else {
@@ -214,7 +214,7 @@ const setupOAuthStrategy = (provider: OAuthProvider) => {
                     }
 
                 } catch (error) {
-                    logger.error(`Error during OAuth process for provider ${profile.provider}: ${(error as any).message}`);
+                    logger.warn(`Error during OAuth process for provider ${profile.provider}: ${(error as any).message}`);
                     return done(error);
                 }
             }
@@ -255,7 +255,7 @@ passport.deserializeUser( async (id: string, done) => {
         logger.debug(`Deserialized user: ${id}`);
         done(null, user);
     } catch (error) {
-        logger.error(`Error deserializing user: ${id} - ${(error as any).message}`);
+        logger.warn(`Error deserializing user: ${id} - ${(error as any).message}`);
         done(error, null);
     }
 });
