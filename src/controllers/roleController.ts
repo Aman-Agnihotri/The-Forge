@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/prisma'; // Import Prisma client
+import { roleService } from '../services/roleService';
 import logger from '../services/logger';
-import { roleActionSchema, validateRoleId } from '../models/roleModel';
 
 /**
  * Retrieves all roles with their associated users.
@@ -13,24 +12,13 @@ import { roleActionSchema, validateRoleId } from '../models/roleModel';
  * @throws {500} - If there is an error while retrieving the roles
  */
 export const getAllRoles = async (req: Request, res: Response, next: NextFunction) => {
+    const username = (req as any).user?.username || 'Unknown User';
+    logger.debug(`User '${username}' is fetching all roles...`);
+
     try {
-        const roles = await prisma.roles.findMany({
-            select: { 
-                id: true, 
-                name: true,
-                users: {
-                    select: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true
-                            }
-                        }
-                    }
-                } 
-            }
-        });
-        logger.debug('Roles fetched successfully.');
+        const roles = await roleService.getAllRoles();
+
+        logger.debug(`User '${username}' fetched all roles.`);
         res.json(roles);
         return;
     } catch (error) {
@@ -51,45 +39,25 @@ export const getAllRoles = async (req: Request, res: Response, next: NextFunctio
  */
 export const getRoleById = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-
-    if (!validateRoleId(id)) {
-        logger.info(`Role fetching failed. Invalid role ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid role ID format.' });
-        return;
-    }
+    const username = (req as any).user?.username || 'Unknown User';
+    logger.debug(`User '${username}' is fetching role with id '${id}'...`);
 
     try {
-        const role = await prisma.roles.findUnique({
-            where: { id },
-            select: { 
-                id: true, 
-                name: true,
-                users: {
-                    select: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true
-                            }
-                        }
-                    }
-                } 
-            }
-        })
+        const role = await roleService.getRoleById(id);
 
         if (!role) {
-            logger.info(`Role fetching failed. Role with id '${id}' not found.`);
+            logger.info(`Role with id '${id}' not found. User '${username}' attempted to fetch it.`);
             res.status(404).json({ message: 'Role not found.' });
             return;
         }
 
-        logger.debug(`Role with id '${id}' fetched successfully.`);
+        logger.debug(`User '${username}' successfully fetched role with ID '${id}'.`);
         res.json(role);
         return;
     } catch (error) {
         next({ message: "Encountered some error while retrieving role.", error });
     }
-}
+};
 
 /**
  * Creates a new role.
@@ -103,44 +71,26 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
  * @throws {500} - If an error occurs while creating the role
  */
 export const createRole = async (req: Request, res: Response, next: NextFunction) => {
-    const parseResult = roleActionSchema.safeParse(req.body);
+    const username = (req as any).user?.username || 'Unknown User';
+    logger.debug(`User '${username}' is attempting to creating a new role...`);
 
-    if (!parseResult.success) {
-        logger.info("Role creation failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
-        res.status(400).json({ message: parseResult.error.errors[0].message });
-        return;
-    }
-
-    const { name } = parseResult.data;
+    const { name } = req.body;
+    logger.debug(`User '${username}' is creating role with name '${name}'.`);
 
     try {
 
         // Check if the role already exists
-        const role = await prisma.roles.findFirst({ 
-            where: {
-                name: {
-                    equals: name,
-                    mode: 'insensitive'
-                }
-            } 
-        });
+        const existingRole = await roleService.getRoleByName(name);
 
-        if (role) {
-            logger.info(`Role creation failed. Role with name '${name}' already exists.`);
+        if (existingRole) {
+            logger.info(`Role creation failed. Role with name '${name}' already exists. User '${username}' attempted to create it.`);
             res.status(409).json({ message: 'Role already exists.' });
             return;
         }
 
-        // Create the new role
-        const newRole = await prisma.roles.create({ 
-            data: { name },
-            select: {
-                id: true,
-                name: true
-            }
-        });
+        const newRole = await roleService.createRole(name);
 
-        logger.debug(`Role '${newRole.name}' created successfully.`);
+        logger.debug(`User '${username}' successfully created role '${newRole.name}' with ID '${newRole.id}'.`);
 
         res.status(201).json(newRole);
         return;
@@ -161,82 +111,47 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
  * @throws {500} - If an error occurs while updating the role
  */
 export const updateRole = async (req: Request, res: Response, next: NextFunction) => {
+    const username = (req as any).user?.username || 'Unknown User';
     const { id } = req.params;
 
-    if (!validateRoleId(id)) {
-        logger.info(`Role update failed. Invalid role ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid role ID format.' });
-        return;
-    }
+    logger.debug(`User '${username}' is attempting to update role with ID '${id}'...`);
 
-    const parseResult = roleActionSchema.safeParse(req.body);
-
-    if (!parseResult.success) {
-        logger.info("Role update failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
-        res.status(400).json({ message: parseResult.error.errors[0].message });
-        return;
-    }
-
-    const { name } = parseResult.data;
+    const { name } = req.body;
+    logger.debug(`User '${username}' is updating role with ID '${id}' to have name '${name}'.`);
 
     try {
         // Check if the role exists
-        const role = await prisma.roles.findUnique({ where: { id } });
+        const role = await roleService.getRoleById(id);
 
         if (!role) {
-            logger.info(`Role update failed. Role with id '${id}' not found.`);
+            logger.info(`Role update failed. Role with id '${id}' not found. User '${username}' attempted to update it.`);
             res.status(404).json({ message: 'Role not found.' });
             return;
         }
 
         if (role.name === name) {
-            logger.info(`Role with id '${id}' not updated. Role name is the same as before.`);
+            logger.info(`Role update failed. New name is the same as the current name for role ID '${id}'. User '${username}' attempted to update it.`);
             res.status(400).json({ message: 'Role name is the same as before.' });
             return;
         }
 
-        // Check if the new role name already exists
-        const existingRole = await prisma.roles.findFirst({
-            where: {
-                name: {
-                    equals: name,
-                    mode: 'insensitive'
-                }
-            }
-        });
+        const existingRole = await roleService.getRoleByName(name);
 
         if (existingRole) {
-            logger.info(`Role update failed. Role with name '${name}' already exists.`);
+            logger.info(`Role update failed. Role with name '${name}' already exists. User '${username}' attempted to rename role ID '${id}' to it.`);
             res.status(409).json({ message: 'Role already exists.' });
             return;
         }
 
-        const updatedRole = await prisma.roles.update({
-            where: { id },
-            data: { name },
-            select: { 
-                id: true, 
-                name: true,
-                users: {
-                    select: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true
-                            }
-                        }
-                    }
-                } 
-            }
-        });
+        const updatedRole = await roleService.updateRole(id, name);
 
-        logger.debug(`Role with id '${id}' updated successfully.`);
+        logger.debug(`User '${username}' successfully updated role with ID '${id}' to name '${name}'.`);
         res.json(updatedRole);
         return;
     } catch (error) {
         next({ message: "Encountered some error while updating role.", error });
     }
-}
+};
 
 /**
  * Deletes a role by its ID. Only admins can delete roles.
@@ -251,37 +166,28 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
  */
 export const deleteRole = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-
-    if (!validateRoleId(id)) {
-        logger.info(`Role deletion failed. Invalid role ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid role ID format.' });
-        return;
-    }
+    const username = (req as any).user?.username || 'Unknown User';
+    logger.debug(`User '${username}' is attempting to delete role with ID '${id}'...`);
 
     try {
 
-        const role = await prisma.roles.findUnique({
-            where: { id }
-        });
+        const role = await roleService.getRoleById(id);
 
         if (!role) {
-            logger.info(`Role deletion failed. Role with id '${id}' not found.`);
+            logger.info(`Role deletion failed. Role with id '${id}' not found. User '${username}' attempted to delete it.`);
             res.status(404).json({ message: 'Role not found.' });
             return;
         }
         
-        // Disconect all users from the role
-        await prisma.user_role.deleteMany({
-            where: { roleId: id }
-        });
-        
-        // Delete the role
-        await prisma.roles.delete({ where: { id } });
+        // Disconect all users from the role and then delete the role
+        const { disconnectedUsersCount, deletedRole } = await roleService.deleteRole(id);
+
+        logger.debug(`Disconnected ${disconnectedUsersCount} users from role ID '${id}' before deletion.`);
             
-        logger.debug(`Role '${role.name}' deleted successfully.`);
+        logger.debug(`User '${username}' successfully deleted role '${deletedRole.name}' with ID '${id}'.`);
         res.json({ message: 'Role deleted successfully.' });
         return;
     } catch (error) {
         next({ message: "Encountered some error while deleting role.", error });
     }
-}
+};

@@ -37,7 +37,7 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
                 
-            expect(loggerSpyDebug).toHaveBeenCalledWith('Roles fetched successfully.');
+            expect(loggerSpyDebug).toHaveBeenCalledWith("User 'AngierJohnson' fetched all roles.");
             expect(loggerSpyInfo).not.toHaveBeenCalled();
         
             expect(res.status).toBe(200);
@@ -69,7 +69,7 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyDebug).toHaveBeenCalledWith(`Role with id '${adminRoleId}' fetched successfully.`);
+            expect(loggerSpyDebug).toHaveBeenCalledWith(`User 'AngierJohnson' successfully fetched role with ID '${adminRoleId}'.`);
             expect(loggerSpyInfo).not.toHaveBeenCalled();
 
             expect(res.status).toBe(200);
@@ -82,8 +82,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role fetching failed. Invalid role ID format: ${testInvalidId}`);
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'GET /v1/api/roles/${testInvalidId}' failed. Invalid role ID format: ${testInvalidId}`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Invalid role ID format.');
@@ -96,7 +96,7 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
                 
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role fetching failed. Role with id '${testNonExistentId}' not found.`);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role with id '${testNonExistentId}' not found. User 'AngierJohnson' attempted to fetch it.`);
             expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
             
             expect(res.status).toBe(404);
@@ -128,13 +128,14 @@ describe('Role Routes Tests', () => {
                 .send({ name: 'testRole' })
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
+            
+            testRoleId = res.body.id;
 
-            expect(loggerSpyDebug).toHaveBeenCalledWith(`Role 'testRole' created successfully.`);
+            expect(loggerSpyDebug).toHaveBeenCalledWith(`User 'AngierJohnson' successfully created role 'testRole' with ID '${testRoleId}'.`);
             expect(loggerSpyInfo).not.toHaveBeenCalled();
             
             expect(res.status).toBe(201);
             expect(res.body).toHaveProperty('id');
-            testRoleId = res.body.id;
         });
 
         test('Role name not provided', async () => {
@@ -144,8 +145,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role creation failed. Invalid request body.\nError: Role name is required.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'POST /v1/api/roles' failed. Invalid request body.\nError: Role name is required.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
 
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name is required.');
@@ -158,8 +159,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role creation failed. Invalid request body.\nError: Role name cannot be empty.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'POST /v1/api/roles' failed. Invalid request body.\nError: Role name cannot be empty.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name cannot be empty.');
@@ -172,8 +173,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role creation failed. Invalid request body.\nError: Role name must be at least 3 characters long.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'POST /v1/api/roles' failed. Invalid request body.\nError: Role name must be at least 3 characters long.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name must be at least 3 characters long.');
@@ -186,8 +187,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role creation failed. Invalid request body.\nError: Role name can only contain letters.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'POST /v1/api/roles' failed. Invalid request body.\nError: Role name can only contain letters.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name can only contain letters.');
@@ -200,8 +201,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role creation failed. Invalid request body.\nError: Role name cannot exceed 10 characters.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'POST /v1/api/roles' failed. Invalid request body.\nError: Role name cannot exceed 10 characters.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name cannot exceed 10 characters.');
@@ -215,8 +216,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role creation failed. Role with name 'Admin' already exists.`);
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role creation failed. Role with name 'Admin' already exists. User 'AngierJohnson' attempted to create it.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(6);
             
             expect(res.status).toBe(409);
             expect(res.body.message).toBe('Role already exists.');
@@ -249,7 +250,7 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
                     
-            expect(loggerSpyDebug).toHaveBeenCalledWith(`Role with id '${testRoleId}' updated successfully.`);
+            expect(loggerSpyDebug).toHaveBeenCalledWith(`User 'AngierJohnson' successfully updated role with ID '${testRoleId}' to name 'updateRole'.`);
             expect(loggerSpyInfo).not.toHaveBeenCalled();
             
             expect(res.status).toBe(200);
@@ -263,8 +264,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role update failed. Invalid role ID format: ${testInvalidId}`);
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'PUT /v1/api/roles/${testInvalidId}' failed. Invalid role ID format: ${testInvalidId}`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Invalid role ID format.');
@@ -277,8 +278,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role update failed. Invalid request body.\nError: Role name is required.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'PUT /v1/api/roles/${testRoleId}' failed. Invalid request body.\nError: Role name is required.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name is required.');
@@ -291,8 +292,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role update failed. Invalid request body.\nError: Role name cannot be empty.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'PUT /v1/api/roles/${testRoleId}' failed. Invalid request body.\nError: Role name cannot be empty.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name cannot be empty.');
@@ -305,8 +306,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role update failed. Invalid request body.\nError: Role name must be at least 3 characters long.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'PUT /v1/api/roles/${testRoleId}' failed. Invalid request body.\nError: Role name must be at least 3 characters long.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name must be at least 3 characters long.');
@@ -319,8 +320,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role update failed. Invalid request body.\nError: Role name can only contain letters.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'PUT /v1/api/roles/${testRoleId}' failed. Invalid request body.\nError: Role name can only contain letters.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name can only contain letters.');
@@ -333,8 +334,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith('Role update failed. Invalid request body.\nError: Role name cannot exceed 10 characters.');
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'PUT /v1/api/roles/${testRoleId}' failed. Invalid request body.\nError: Role name cannot exceed 10 characters.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name cannot exceed 10 characters.');
@@ -348,8 +349,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
                 
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role update failed. Role with id '${testNonExistentId}' not found.`);
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role update failed. Role with id '${testNonExistentId}' not found. User 'AngierJohnson' attempted to update it.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(6);
             
             expect(res.status).toBe(404);
             expect(res.body.message).toBe('Role not found.');
@@ -362,8 +363,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role with id '${testRoleId}' not updated. Role name is the same as before.`);
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role update failed. New name is the same as the current name for role ID '${testRoleId}'. User 'AngierJohnson' attempted to update it.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(6);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Role name is the same as before.');
@@ -377,8 +378,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
             
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role update failed. Role with name 'Admin' already exists.`);
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role update failed. Role with name 'Admin' already exists. User 'AngierJohnson' attempted to rename role ID '${testRoleId}' to it.`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(6);
             
             expect(res.status).toBe(409);
             expect(res.body.message).toBe('Role already exists.');
@@ -410,7 +411,7 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyDebug).toHaveBeenCalledWith(`Role 'updateRole' deleted successfully.`);
+            expect(loggerSpyDebug).toHaveBeenCalledWith(`User 'AngierJohnson' successfully deleted role 'updateRole' with ID '${testRoleId}'.`);
             expect(loggerSpyInfo).not.toHaveBeenCalled();
             
             expect(res.status).toBe(200);
@@ -423,8 +424,8 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
 
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role deletion failed. Invalid role ID format: ${testInvalidId}`);
-            expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Request 'DELETE /v1/api/roles/${testInvalidId}' failed. Invalid role ID format: ${testInvalidId}`);
+            expect(loggerSpyDebug).toHaveBeenCalledTimes(4);
             
             expect(res.status).toBe(400);
             expect(res.body.message).toBe('Invalid role ID format.');
@@ -437,7 +438,7 @@ describe('Role Routes Tests', () => {
                 .set('Authorization', `Bearer ${adminToken}`)
                 .set('X-Forwarded-For', rateLimitBypassIp);
     
-            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role deletion failed. Role with id '${testNonExistentId}' not found.`);
+            expect(loggerSpyInfo).toHaveBeenCalledWith(`Role deletion failed. Role with id '${testNonExistentId}' not found. User 'AngierJohnson' attempted to delete it.`);
             expect(loggerSpyDebug).toHaveBeenCalledTimes(5);
 
             expect(res.status).toBe(404);

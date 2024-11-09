@@ -79,8 +79,3 @@ export const updateUserSchema = z.object({
 }).refine(data => Object.values(data).some(value => value !== undefined), {
     message: "At least one field must be provided.",
 });
-
-export function validateUserId(id: string){
-    const cuidRegex = /^c[0-9a-z]{24}$/i;
-    return cuidRegex.test(id);
-}

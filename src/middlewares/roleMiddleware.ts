@@ -13,7 +13,8 @@ export const authorizeRoles = (roles: string[]) => {
         }
 
         // Check if the user has at least one of the required roles
-        const hasRole = user.roles.some((userRole: any) => roles.includes(userRole.role.name));
+        const rolesLower = roles.map(role => role.toLowerCase());
+        const hasRole = user.roles.some((userRole: any) => rolesLower.includes(userRole.role.name.toLowerCase()));
         if (!hasRole) {
             logger.info(`Access denied: User '${user.id}' has insufficient permissions.`);
             res.status(403).json({ message: 'Access denied.' });

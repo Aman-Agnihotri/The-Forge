@@ -12,6 +12,7 @@ import {
     bulkPermanentlyDeleteUsers
 } from "../controllers/userController";
 import { authorizeRoles } from "../middlewares/roleMiddleware";
+import { validateIdParam } from "../middlewares/validationMiddleware";
 import logger from "../services/logger";
 
 const router = Router();
@@ -189,7 +190,7 @@ router.get('/all', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error retrieving user.
  */
-router.get('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
+router.get('/:id', authorizeRoles(['admin', 'user']), validateIdParam, (req, res, next) => {
     logger.debug(`Fetching user by ID: ${req.params.id}`);
     next();
 }, getUserById);
@@ -255,7 +256,7 @@ router.get('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
  *       500:
  *         description: Error retrieving user.
  */
-router.get('/all/:id/', authorizeRoles(['admin']), (req, res, next) => {
+router.get('/all/:id/', authorizeRoles(['admin']), validateIdParam, (req, res, next) => {
     logger.debug(`Fetching user by ID including deleted: ${req.params.id}`);
     next();
 }, getUserByIdIncludingDeleted);
@@ -386,7 +387,7 @@ router.post('/', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error updating user.
  */
-router.put('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
+router.put('/:id', authorizeRoles(['admin', 'user']), validateIdParam, (req, res, next) => {
     logger.debug(`Updating user by ID: ${req.params.id}`);
     next();
 }, updateUser);
@@ -416,7 +417,7 @@ router.put('/:id', authorizeRoles(['admin', 'user']), (req, res, next) => {
  *       500:
  *         description: Error deleting user.
  */
-router.delete('/:id', authorizeRoles(['admin']), (req, res, next) => {
+router.delete('/:id', authorizeRoles(['admin']), validateIdParam, (req, res, next) => {
     logger.debug(`Soft deleting user by ID: ${req.params.id}`);
     next();
 }, deleteUser);
@@ -453,7 +454,7 @@ router.delete('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error restoring user.
  */
-router.put('/restore/:id', authorizeRoles(['admin']), (req, res, next) => {
+router.put('/restore/:id', authorizeRoles(['admin']), validateIdParam, (req, res, next) => {
     logger.debug(`Restoring user by ID: ${req.params.id}`);
     next();
 }, restoreUser);
@@ -488,7 +489,7 @@ router.put('/restore/:id', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error permanently deleting user.
  */
-router.delete('/permanent/:id', authorizeRoles(['admin']), (req, res, next) => {
+router.delete('/permanent/:id', authorizeRoles(['admin']), validateIdParam, (req, res, next) => {
     logger.debug(`Permanently deleting user by ID: ${req.params.id}`);
     next();
 }, permanentlyDeleteUser);

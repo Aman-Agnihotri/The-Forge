@@ -7,6 +7,7 @@ import {
     deleteRole
 } from '../controllers/roleController';
 import { authorizeRoles } from '../middlewares/roleMiddleware';
+import { validateRoleBody, validateIdParam } from '../middlewares/validationMiddleware'; 
 import logger from '../services/logger';
 
 const router = Router();
@@ -57,10 +58,7 @@ router.use((req, res, next) => {
  *       500:
  *         description: Error retrieving roles.
  */
-router.get('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.debug('Fetching all roles...');
-    getAllRoles(req, res, next);
-});
+router.get('/', authorizeRoles(['admin']), getAllRoles);
 
 /**
  * @swagger
@@ -111,10 +109,7 @@ router.get('/', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error retrieving role.
  */
-router.get('/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.debug(`Fetching role with ID: ${req.params.id}`);
-    getRoleById(req, res, next);
-});
+router.get('/:id', authorizeRoles(['admin']), validateIdParam, getRoleById);
 
 /**
  * @swagger
@@ -158,10 +153,7 @@ router.get('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error creating role.
  */
-router.post('/', authorizeRoles(['admin']), (req, res, next) => {
-    logger.debug('Creating a new role...');
-    createRole(req, res, next);
-});
+router.post('/', authorizeRoles(['admin']), validateRoleBody, createRole);
 
 /**
  * @swagger
@@ -216,10 +208,7 @@ router.post('/', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error updating role.
  */
-router.put('/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.debug(`Updating role with ID: ${req.params.id}`);
-    updateRole(req, res, next);
-});
+router.put('/:id', authorizeRoles(['admin']), validateIdParam, validateRoleBody, updateRole);
 
 /**
  * @swagger
@@ -252,9 +241,6 @@ router.put('/:id', authorizeRoles(['admin']), (req, res, next) => {
  *       500:
  *         description: Error deleting role.
  */
-router.delete('/:id', authorizeRoles(['admin']), (req, res, next) => {
-    logger.debug(`Deleting role with ID: ${req.params.id}`);
-    deleteRole(req, res, next);
-});
+router.delete('/:id', authorizeRoles(['admin']), validateIdParam, deleteRole);
 
 export default router;

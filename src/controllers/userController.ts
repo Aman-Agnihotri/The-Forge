@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/prisma'; // Import Prisma client
 import { hashPassword } from '../utils/passwordHash';
 import logger from '../services/logger';
-import { registerUserSchema, updateUserSchema, validateUserId } from '../models/userModel';
+import { registerUserSchema, updateUserSchema } from '../models/userModel';
 import { DEFAULT_ROLE } from '../utils/constants';
 
 /**
@@ -99,12 +99,6 @@ export const getAllUsersIncludingDeleted = async (req: Request, res: Response, n
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    if (!validateUserId(id)) {
-        logger.info(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format.' });
-        return;
-    }
-
     try {
         const user = await prisma.users.findUnique({
             where: { id, deletedAt: null }, // Ensure the user isn’t soft deleted
@@ -156,12 +150,6 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
  */
 export const getUserByIdIncludingDeleted = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-
-    if (!validateUserId(id)) {
-        logger.info(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format.' });
-        return;
-    }
 
     try {
         const user = await prisma.users.findUnique({
@@ -305,12 +293,6 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    if (!validateUserId(id)) {
-        logger.info(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format.' });
-        return;
-    }
-
     const parseResult = updateUserSchema.safeParse(req.body);
 
     if (!parseResult.success) {
@@ -443,12 +425,6 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    if (!validateUserId(id)) {
-        logger.info(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format.' });
-        return;
-    }
-
     try {
 
         const user = await prisma.users.findUnique({
@@ -491,12 +467,6 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
  */
 export const restoreUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-
-    if (!validateUserId(id)) {
-        logger.info(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format.' });
-        return;
-    }
 
     try {
 
@@ -542,12 +512,6 @@ export const restoreUser = async (req: Request, res: Response, next: NextFunctio
  */
 export const permanentlyDeleteUser = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-
-    if (!validateUserId(id)) {
-        logger.info(`Invalid user ID format: ${id}`)
-        res.status(400).json({ message: 'Invalid user ID format.' });
-        return;
-    }
 
     try {
 

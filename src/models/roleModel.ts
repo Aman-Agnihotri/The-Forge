@@ -9,8 +9,3 @@ export const roleActionSchema = z.object({
         .regex(/^[a-zA-Z]+$/, "Role name can only contain letters.")
         .max(10, "Role name cannot exceed 10 characters.")
 });
-
-export function validateRoleId(id: string){
-    const cuidRegex = /^c[0-9a-z]{24}$/i;
-    return cuidRegex.test(id);
-}
