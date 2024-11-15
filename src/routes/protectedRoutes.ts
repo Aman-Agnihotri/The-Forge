@@ -34,6 +34,8 @@ router.use("/roles", useRateLimitMiddleware, roleRoutes);
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 message:
  *                   type: string
  *                 user:
@@ -63,7 +65,7 @@ router.get("/", async (req: any, res: any, next: any) => {
         });
 
         logger.debug(`User '${userinfo?.username}' accessed the protected route`);
-        res.json({ message: `Welcome to the secret club, ${userinfo?.username}!`, userinfo });
+        res.json({ success: true, message: `Welcome to the secret club, ${userinfo?.username}!`, userinfo });
     } catch (error) {
         next({ message: "Error accessing protected route", error });
     }

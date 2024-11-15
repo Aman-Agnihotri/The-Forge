@@ -19,7 +19,7 @@ export const getAllRoles = async (req: Request, res: Response, next: NextFunctio
         const roles = await roleService.getAllRoles();
 
         logger.debug(`User '${username}' fetched all roles.`);
-        res.json(roles);
+        res.json({ success: true, roles });
         return;
     } catch (error) {
         next({message: 'Encountered some error while retrieving roles.', error});
@@ -47,12 +47,12 @@ export const getRoleById = async (req: Request, res: Response, next: NextFunctio
 
         if (!role) {
             logger.info(`Role with id '${id}' not found. User '${username}' attempted to fetch it.`);
-            res.status(404).json({ message: 'Role not found.' });
+            res.status(404).json({ success: false, message: 'Role not found.' });
             return;
         }
 
         logger.debug(`User '${username}' successfully fetched role with ID '${id}'.`);
-        res.json(role);
+        res.json({ success: true, role });
         return;
     } catch (error) {
         next({ message: "Encountered some error while retrieving role.", error });
@@ -84,7 +84,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 
         if (existingRole) {
             logger.info(`Role creation failed. Role with name '${name}' already exists. User '${username}' attempted to create it.`);
-            res.status(409).json({ message: 'Role already exists.' });
+            res.status(409).json({ success: false, message: 'Role already exists.' });
             return;
         }
 
@@ -92,7 +92,7 @@ export const createRole = async (req: Request, res: Response, next: NextFunction
 
         logger.debug(`User '${username}' successfully created role '${newRole.name}' with ID '${newRole.id}'.`);
 
-        res.status(201).json(newRole);
+        res.status(201).json({ success: true, newRole });
         return;
     } catch (error) {
         next({message: 'Encountered some error while creating role.', error});
@@ -125,13 +125,13 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
 
         if (!role) {
             logger.info(`Role update failed. Role with id '${id}' not found. User '${username}' attempted to update it.`);
-            res.status(404).json({ message: 'Role not found.' });
+            res.status(404).json({ success: false, message: 'Role not found.' });
             return;
         }
 
         if (role.name === name) {
             logger.info(`Role update failed. New name is the same as the current name for role ID '${id}'. User '${username}' attempted to update it.`);
-            res.status(400).json({ message: 'Role name is the same as before.' });
+            res.status(400).json({ success: false, message: 'Role name is the same as before.' });
             return;
         }
 
@@ -139,14 +139,14 @@ export const updateRole = async (req: Request, res: Response, next: NextFunction
 
         if (existingRole) {
             logger.info(`Role update failed. Role with name '${name}' already exists. User '${username}' attempted to rename role ID '${id}' to it.`);
-            res.status(409).json({ message: 'Role already exists.' });
+            res.status(409).json({ success: false, message: 'Role already exists.' });
             return;
         }
 
         const updatedRole = await roleService.updateRole(id, name);
 
         logger.debug(`User '${username}' successfully updated role with ID '${id}' to name '${name}'.`);
-        res.json(updatedRole);
+        res.json({ success: true, updatedRole });
         return;
     } catch (error) {
         next({ message: "Encountered some error while updating role.", error });
@@ -175,7 +175,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
 
         if (!role) {
             logger.info(`Role deletion failed. Role with id '${id}' not found. User '${username}' attempted to delete it.`);
-            res.status(404).json({ message: 'Role not found.' });
+            res.status(404).json({ success: false, message: 'Role not found.' });
             return;
         }
         
@@ -185,7 +185,7 @@ export const deleteRole = async (req: Request, res: Response, next: NextFunction
         logger.debug(`Disconnected ${disconnectedUsersCount} users from role ID '${id}' before deletion.`);
             
         logger.debug(`User '${username}' successfully deleted role '${deletedRole.name}' with ID '${id}'.`);
-        res.json({ message: 'Role deleted successfully.' });
+        res.json({ success: true, message: 'Role deleted successfully.' });
         return;
     } catch (error) {
         next({ message: "Encountered some error while deleting role.", error });

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, TokenExpiredError, JsonWebTokenError } from "../utils/jwt";
-import { prisma } from "../config/prisma";
+import { userService } from "../services/userService";
 import logger from "../utils/logger";
 
 /**
@@ -20,7 +20,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
         // }
 
         logger.info("Unauthorized access: No authentication token provided.");
-        return res.status(401).json({ message: "Unauthorized, please log in." });
+        return res.status(401).json({ success: false, message: "Unauthorized, please log in." });
     }
 
     const token = authHeader.split(' ')[1];
@@ -34,32 +34,14 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
             user_id = decodedUser.id;
         } else {
             logger.info("Authentication failed. Invalid token payload: " + JSON.stringify(decodedUser));
-            return res.status(401).json({ message: 'Invalid or expired access token.' });
+            return res.status(401).json({ success: false, message: 'Invalid or expired access token.' });
         }
 
-        const user = await prisma.users.findUnique({ where: { id: user_id, deletedAt: null },
-            select: { 
-                id: true,
-                username: true,
-                email: true,
-                createdAt: true,
-                roles: {
-                    select: {
-                        role: true
-                    }
-                },
-                providers: {
-                    select: {
-                        providerName: true,
-                        providerId: true
-                    }
-                }
-            }
-        });
+        const user = await userService.getUserById(user_id, false);
 
         if (!user) {
-            logger.info("Authentication failed. User with ID " + user_id + " not found. ");
-            return res.status(401).json({ message: 'Invalid or expired access token.' });
+            logger.info("Authentication failed. User with ID " + user_id + " not found.");
+            return res.status(401).json({ success: false, message: 'Invalid or expired access token.' });
         }
 
         (req as any).user = user;
@@ -67,15 +49,15 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     } catch (error) {
         if (error instanceof TokenExpiredError) {
             logger.info(`Authentication failed. Token expired. \nExpiredAt: ${error.expiredAt}`);
-            return res.status(401).json({ message: "Invalid or expired access token." });
+            return res.status(401).json({ success: false, message: "Invalid or expired access token." });
 
         } else if (error instanceof Error && error.message === 'invalid signature'){
             logger.info("Authentication failed. Invalid token signature.");
-            return res.status(401).json({ message: "Invalid or expired access token." });
+            return res.status(401).json({ success: false, message: "Invalid or expired access token." });
 
         } else if (error instanceof JsonWebTokenError) {
             logger.info("Authentication failed. Malformed token.");
-            return res.status(401).json({ message: "Invalid or expired access token." });
+            return res.status(401).json({ success: false, message: "Invalid or expired access token." });
 
         } else {
             next({ message: "An error occurred during authentication.", error });

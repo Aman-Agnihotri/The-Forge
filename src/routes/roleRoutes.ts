@@ -7,7 +7,7 @@ import {
     deleteRole
 } from '../controllers/roleController';
 import { authorizeRoles } from '../middlewares/roleMiddleware';
-import { validateRoleBody, validateIdParam } from '../middlewares/validationMiddleware'; 
+import { validateBody, validateIdParam } from '../middlewares/validationMiddleware'; 
 import logger from '../utils/logger';
 
 const router = Router();
@@ -32,23 +32,31 @@ router.use((req, res, next) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   users:
- *                     type: array
- *                     items:
- *                       type: object
- *                       properties:
- *                         id:
- *                           type: string
- *                         username:
- *                           type: string
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 roles:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       users:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             user:
+ *                               type: object
+ *                               properties:
+ *                                 id:
+ *                                   type: string
+ *                                 username:
+ *                                   type: string
  *       401:
  *         description: Unauthorized access.
  *       403:
@@ -83,19 +91,27 @@ router.get('/', authorizeRoles(['admin']), getAllRoles);
  *             schema:
  *               type: object
  *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
- *                 users:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                       username:
- *                         type: string
+ *                 success:
+ *                   type: boolean
+ *                 role:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           user:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                               username:
+ *                                 type: string
  *       400:
  *         description: Invalid role ID format.
  *       401:
@@ -138,10 +154,15 @@ router.get('/:id', authorizeRoles(['admin']), validateIdParam, getRoleById);
  *             schema:
  *               type: object
  *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
+ *                 success:
+ *                   type: boolean
+ *                 newRole:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
  *       400:
  *         description: Invalid request body.
  *       401:
@@ -153,7 +174,7 @@ router.get('/:id', authorizeRoles(['admin']), validateIdParam, getRoleById);
  *       500:
  *         description: Error creating role.
  */
-router.post('/', authorizeRoles(['admin']), validateRoleBody, createRole);
+router.post('/', authorizeRoles(['admin']), validateBody, createRole);
 
 /**
  * @swagger
@@ -189,10 +210,27 @@ router.post('/', authorizeRoles(['admin']), validateRoleBody, createRole);
  *             schema:
  *               type: object
  *               properties:
- *                 id:
- *                   type: string
- *                 name:
- *                   type: string
+ *                 success:
+ *                   type: boolean
+ *                 updatedRole:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     users:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           user:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                               username:
+ *                                 type: string
  *       400:
  *         description: Invalid ID format or invalid request body.
  *       401:
@@ -208,7 +246,7 @@ router.post('/', authorizeRoles(['admin']), validateRoleBody, createRole);
  *       500:
  *         description: Error updating role.
  */
-router.put('/:id', authorizeRoles(['admin']), validateIdParam, validateRoleBody, updateRole);
+router.put('/:id', authorizeRoles(['admin']), validateIdParam, validateBody, updateRole);
 
 /**
  * @swagger

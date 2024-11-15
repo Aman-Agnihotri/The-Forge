@@ -8,7 +8,7 @@ export const authorizeRoles = (roles: string[]) => {
 
         if (!user.roles || user.roles.length === 0) {
             logger.info(`Access denied: User '${user.id}' has no roles assigned.`);
-            res.status(403).json({ message: 'Access denied.' });
+            res.status(403).json({ success: false, message: 'Access denied.' });
             return;
         }
 
@@ -17,7 +17,7 @@ export const authorizeRoles = (roles: string[]) => {
         const hasRole = user.roles.some((userRole: any) => rolesLower.includes(userRole.role.name.toLowerCase()));
         if (!hasRole) {
             logger.info(`Access denied: User '${user.id}' has insufficient permissions.`);
-            res.status(403).json({ message: 'Access denied.' });
+            res.status(403).json({ success: false, message: 'Access denied.' });
             return;
         }
         

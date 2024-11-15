@@ -4,6 +4,7 @@ import passport from "../controllers/passportController";
 import { PROVIDERS, HOST_UI_URL } from "../utils/constants";
 import { generateToken } from "../utils/jwt";
 import { loginUser, registerUser, refreshToken } from "../controllers/authController";
+import { validateBody } from "../middlewares/validationMiddleware";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import logger from "../utils/logger";
 import { loginRateLimiter, registrationRateLimiter, tokenRefreshRateLimiter, oauthLinkingRateLimiter, oauthLoginRateLimiter, oauthUnlinkingRateLimiter } from "../middlewares/rateLimitMiddleware";
@@ -40,6 +41,8 @@ const router = Router();
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 token:
  *                   type: string
  *                 refreshToken:
@@ -61,7 +64,7 @@ const router = Router();
  *         description: Internal server error.
  */
 
-router.post("/login", loginRateLimiter, (req, res, next) => {
+router.post("/login", loginRateLimiter, validateBody, (req, res, next) => {
     logger.debug("Login attempt");
     loginUser(req, res, next);
 });
@@ -102,6 +105,8 @@ router.post("/login", loginRateLimiter, (req, res, next) => {
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 token:
  *                   type: string
  *                 refreshToken:
@@ -125,7 +130,7 @@ router.post("/login", loginRateLimiter, (req, res, next) => {
  *         description: Internal server error.
  */
 
-router.post("/register", registrationRateLimiter, (req, res, next) => {
+router.post("/register", registrationRateLimiter, validateBody, (req, res, next) => {
     logger.debug("Registration attempt");
     registerUser(req, res, next);
 });
@@ -158,6 +163,8 @@ router.post("/register", registrationRateLimiter, (req, res, next) => {
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
  *                 token:
  *                   type: string
  *       400:
@@ -215,7 +222,7 @@ router.get("/:provider", (req, res, next) => {
 
     if (!PROVIDERS.includes(provider)) {
         logger.info(`Invalid provider provided for authentication in request: ${provider}`);
-        res.status(400).json({ message: 'Invalid provider' });
+        res.status(400).json({ success: false, message: 'Invalid provider' });
         return;
     }
 
@@ -227,7 +234,7 @@ router.get("/:provider", (req, res, next) => {
     if (isLinking) {
         if (!token) {
             logger.info(`Missing token in request for provider linking: ${provider}`);
-            res.status(400).json({ message: 'Missing token' });
+            res.status(400).json({ success: false, message: 'Missing token' });
             return;
         }
 
@@ -335,7 +342,7 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
 
     if (!PROVIDERS.includes(provider)) {
         logger.info(`Invalid provider provided for unlinking in request: ${provider}`);
-        res.status(400).json({ message: 'Invalid provider' });
+        res.status(400).json({ success: false, message: 'Invalid provider' });
         return;
     }
 
@@ -354,7 +361,7 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
 
         if (!existingProvider) {
             logger.info(`No linked ${provider} account found for user: ${userId}`);
-            res.status(404).json({ message: `No linked ${provider} account found for this user.` });
+            res.status(404).json({ success: false, message: `No linked ${provider} account found for this user.` });
             return;
         }
 
@@ -366,7 +373,7 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
         const user = await prisma.users.findUnique({ where: { id: userId } });
         if (!user?.password && otherProviders === 0) {
             logger.info(`Cannot unlink the last provider for user: ${userId}`);
-            res.status(400).json({ message: 'Cannot unlink the last provider. Add a password or another provider before unlinking.' });
+            res.status(400).json({ success: false, message: 'Cannot unlink the last provider. Add a password or another provider before unlinking.' });
             return;
         }
 
@@ -378,7 +385,7 @@ router.delete("/unlink/:provider", authenticateUser, oauthUnlinkingRateLimiter, 
         });
 
         logger.debug(`${provider} account unlinked successfully for user: ${userId}`);
-        res.json({ message: `${provider} account unlinked successfully.` });
+        res.json({ success: true, message: `${provider} account unlinked successfully.` });
         return;
     } catch (error) {
         next({ message: "An error occurred while unlinking the provider.", error });

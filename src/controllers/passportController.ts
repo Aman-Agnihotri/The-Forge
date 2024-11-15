@@ -27,6 +27,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         } else {
             logger.info("Invalid token payload received during provider linking: " + JSON.stringify(decodedUser));
             return done(JSON.stringify({
+                success: false,
                 message: 'Invalid or expired access token.',
                 status: 401
             }));
@@ -37,6 +38,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (!user) {
             logger.info("User with ID '" + loggedInUserId + "' not found");
             return done(JSON.stringify({
+                success: false,
                 message: 'Invalid or expired access token.',
                 status: 401
             }));
@@ -53,6 +55,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (existingProvider) {
             logger.info("User '" + loggedInUserId + "' tried to link an already linked provider: " + profile.provider);
             return done(JSON.stringify({
+                success: false,
                 message: 'This provider is already linked to this account',
                 status: 409
             }));
@@ -62,6 +65,7 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (user.email !== profile.emails[0].value) {
             logger.info("User '" + loggedInUserId + "' tried to link a provider with a different email: " + profile.emails[0].value);
             return done(JSON.stringify({
+                success: false,
                 message: 'The OAuth account that you are trying to link has a different email than your account',
                 status: 409
             }));
@@ -87,23 +91,27 @@ async function linkProvider(token: string, profile: any, done: (error: any, user
         if (error instanceof TokenExpiredError){
             logger.info("Token expired: " + error.message);
             return done(JSON.stringify({
+                success: false,
                 message: 'Invalid or expired access token.',
                 status: 401
             }))
         } else if (error instanceof Error && error.message === 'invalid signature'){
             logger.info("Invalid token signature: " + error.message);
             return done(JSON.stringify({
+                success: false,
                 message: 'Invalid or expired access token.',
                 status: 401
             }))
         } else if (error instanceof JsonWebTokenError) {
             logger.info("Malformed token: " + error.message);
             return done(JSON.stringify({
+                success: false,
                 message: 'Invalid or expired access token.',
                 status: 401
             }))
         } else {
             return done(JSON.stringify({
+                success: false,
                 message: 'An error occurred during provider linking: ' + error,
                 status: 500
             }))
@@ -133,6 +141,7 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
             if (!existingProvider) {
                 logger.info(`Email conflict during OAuth authentication for email: ${email}`);
                 return done(JSON.stringify({
+                    success: false,
                     message: 'An account with this email already exists',
                     status: 409
                 }));
@@ -173,6 +182,7 @@ async function authenticateSessionJWT(profile: any, done: (error: any, user?: an
         return done(null, newUser);
     } catch (error) {
         return done(JSON.stringify({
+            success: false,
             message: 'An error occurred during OAuth authentication: ' + error,
             status: 500
         }));

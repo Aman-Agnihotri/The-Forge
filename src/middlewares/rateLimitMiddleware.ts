@@ -21,7 +21,7 @@ export const createIpRateLimiter = (config = rateLimitConfig.ip) => rateLimit({
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.info(`IP rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).json({ message: options.message });
+        res.status(options.statusCode).json({ success: false, message: options.message });
     }
 });
 
@@ -44,7 +44,7 @@ export const createLoginRateLimiter = (config = rateLimitConfig.login) => rateLi
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.info(`Login rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).json({ message: options.message });
+        res.status(options.statusCode).json({ success: false, message: options.message });
     }
 });
 
@@ -69,7 +69,7 @@ export const createRegistrationRateLimiter = (config = rateLimitConfig.registrat
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.info(`Registration rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).json({ message: options.message });
+        res.status(options.statusCode).json({ success: false, message: options.message });
     }
 });
 
@@ -94,7 +94,7 @@ export const createTokenRefreshRateLimiter = (config = rateLimitConfig.token_ref
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.info(`Token refresh rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).json({ message: options.message });
+        res.status(options.statusCode).json({ success: false, message: options.message });
     }
 });
 
@@ -119,7 +119,7 @@ export const createOauthLoginRateLimiter = (config = rateLimitConfig.oauth) => r
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.info(`OAuth login rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).json({ message: options.message });
+        res.status(options.statusCode).json({ success: false, message: options.message });
     }
 });
 
@@ -144,7 +144,7 @@ export const createOauthLinkingRateLimiter = (config = rateLimitConfig.oauth) =>
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.info(`OAuth linking rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).json({ message: options.message });
+        res.status(options.statusCode).json({ success: false, message: options.message });
     }
 });
 
@@ -169,7 +169,7 @@ export const createOauthUnlinkingRateLimiter = (config = rateLimitConfig.oauth) 
     skip: (req: Request, res: Response) => rateLimitBypassIp.includes(req.ip as string),
     handler: (req, res, next, options) => {
         logger.info(`OAuth unlinking rate limit exceeded for IP: ${req.ip}`);
-        res.status(options.statusCode).json({ message: options.message });
+        res.status(options.statusCode).json({ success: false, message: options.message });
     }
 });
 
@@ -208,7 +208,7 @@ export const useRateLimitMiddleware = async (req: Request, res: Response, next: 
 
     if (!user.roles || user.roles.length === 0) {
         logger.info(`Access denied: User has no roles assigned. User ID: ${user.id}, IP: ${req.ip}`);
-        res.status(403).json({ message: 'Access denied.' });
+        res.status(403).json({ success: false, message: 'Access denied.' });
         return;
     }
 
@@ -226,6 +226,6 @@ export const useRateLimitMiddleware = async (req: Request, res: Response, next: 
         next();
     }).catch(() => {
         logger.info(`Rate limit exceeded for user ID: ${userID}, Role: ${role}, IP: ${req.ip}`);
-        return res.status(429).json({ message: `Too many requests, please try again after ${rateLimiter.msDuration / 1000} seconds.` });  // Limit exceeded
+        return res.status(429).json({ success: false, message: `Too many requests, please try again after ${rateLimiter.msDuration / 1000} seconds.` });  // Limit exceeded
     });
 }

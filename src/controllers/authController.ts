@@ -7,7 +7,6 @@ import {
     JsonWebTokenError 
 } from "../utils/jwt";
 import { hashPassword, verifyPassword } from "../utils/passwordHash";
-import { registerUserSchema, loginUserSchema } from "../models/userModel";
 import { prisma } from "../config/prisma";
 import logger from "../utils/logger";
 import { DEFAULT_ROLE } from "../utils/constants";
@@ -27,21 +26,15 @@ import { DEFAULT_ROLE } from "../utils/constants";
  * @throws {500} - An error occurred while registering the user.
  */
 export const registerUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const parseResult = registerUserSchema.safeParse(req.body);
 
-    if (!parseResult.success) {
-        logger.info("User registration failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
-        return res.status(400).json({ message: parseResult.error.errors[0].message });
-    }
-
-    const { username, email, password, role_name } = parseResult.data;
+    const { username, email, password, role_name } = req.body;
 
     try{
         //Check if the user already exists
         const user = await prisma.users.findUnique({ where: { email } });
         if(user){
             logger.info("User registration failed. User already exists with email: " + email);
-            return res.status(409).json({ message: "User already exists with provided email address." });
+            return res.status(409).json({ success: false, message: "User already exists with provided email address." });
         }
 
         // Check if the role exists
@@ -52,7 +45,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
                 throw new Error(`Default role '${role_name}' not found.`);
             }
             logger.info("User registration failed. Role '" + role_name + "' does not exist.");
-            return res.status(404).json({ message: 'Role does not exist' });
+            return res.status(404).json({ success: false, message: 'Role does not exist' });
         }
 
         //Create a new user and hash the password
@@ -87,7 +80,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
         logger.debug(`User '${username}' registered successfully with email '${email}'.`);
 
         // Return the JWT and the user object
-        return res.status(201).json({ token, refreshToken, user: filteredUserData });
+        return res.status(201).json({ success: true, token, refreshToken, user: filteredUserData });
     } catch (error) {
         next({ message: "An error occurred while registering user.", error });
     }
@@ -107,18 +100,8 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
  * @throws {500} - An error occurred while processing the login.
  */
 export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const parseResult = loginUserSchema.safeParse(req.body);
-    
-    if (!parseResult.success) {
-        if(parseResult.error.errors[0].message.includes("empty") || parseResult.error.errors[0].message.includes("required") || parseResult.error.errors[0].message.includes("Password") ) {
-            logger.info("User login failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
-            return res.status(400).json({ message: parseResult.error.errors[0].message });
-        }
-        logger.info("User login failed. Invalid request body.\nError: " + parseResult.error.errors[0].message);
-        return res.status(400).json({ message: "Invalid email or password." });
-    }
 
-    const { email, password } = parseResult.data;
+    const { email, password } = req.body;
 
     try{
         //Check if the user exists
@@ -126,26 +109,26 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 
         if(!user){
             logger.info(`User login failed. User not found with email '${email}'.`);
-            return res.status(401).json({ message: "Invalid email or password." });
+            return res.status(401).json({ success: false, message: "Invalid email or password." });
         }
 
         //Check if the user is soft deleted
         if(user.deletedAt){
             logger.info(`User login failed. User with email address '${email}' is soft deleted.`);
-            return res.status(401).json({ message: "Invalid email or password." });
+            return res.status(401).json({ success: false, message: "Invalid email or password." });
         }
 
         //Check if the user has a password
         if (user.password === null) {
             logger.info(`User login failed. A social login account with '${email}' email address already exists.`);
-            return res.status(401).json({ message: "Invalid email or password." });
+            return res.status(401).json({ success: false, message: "Invalid email or password." });
         }
 
         // Verify the password
         const validPassword = await verifyPassword(user.password, password);
         if(!validPassword) {
             logger.info(`User login failed. Invalid password for user '${email}'.`);
-            return res.status(401).json({ message: "Invalid password." });
+            return res.status(401).json({ success: false, message: "Invalid password." });
         }
 
         // Generate tokens
@@ -157,7 +140,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 
         // Log the successful login
         logger.debug(`User '${user.username}' logged in successfully with email '${email}'.`);
-        return res.status(200).json({ token, refreshToken, user: filteredUserData });
+        return res.status(200).json({ success: true, token, refreshToken, user: filteredUserData });
     } catch (error) {
         next({ message: "An error occurred while logging in.", error });
     }
@@ -180,7 +163,7 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     const { refreshToken } = req.body;
     if (!refreshToken) {
         logger.info("Refresh token request failed. Missing token.");
-        return res.status(400).json({ message: "Missing token." });
+        return res.status(400).json({ success: false, message: "Missing token." });
     }
 
     try {
@@ -195,31 +178,31 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 
             if (!user) {
                 logger.info(`Refresh token request failed. User with ID ${user_id} not found.`);
-                return res.status(401).json({ message: "Invalid or expired token." });
+                return res.status(401).json({ success: false, message: "Invalid or expired token." });
             }
 
             const newAccessToken = generateToken(user_id);
 
             logger.debug(`Token refreshed successfully for user with ID ${user_id}.`);
-            return res.status(200).json({ token: newAccessToken });
+            return res.status(200).json({ success: true, token: newAccessToken });
 
         } else {
             logger.info(`Refresh token request failed. Invalid refresh token payload: ${JSON.stringify(decodedRefreshToken)}`);
-            return res.status(401).json({ message: "Invalid or expired token." });
+            return res.status(401).json({ success: false, message: "Invalid or expired token." });
         }
 
     } catch (error) {
         if (error instanceof TokenExpiredError) {
             logger.info(`Refresh token request failed. Token expired. \nExpiredAt: ${error.expiredAt}`);
-            return res.status(401).json({ message: "Invalid or expired token." });
+            return res.status(401).json({ success: false, message: "Invalid or expired token." });
 
         } else if (error instanceof Error && error.message === 'invalid signature'){
             logger.info("Refresh token request failed. Invalid token signature.");
-            return res.status(401).json({ message: "Invalid or expired token." });
+            return res.status(401).json({ success: false, message: "Invalid or expired token." });
             
         } else if (error instanceof JsonWebTokenError) {
             logger.info("Refresh token request failed. Malformed token.");
-            return res.status(401).json({ message: "Invalid or expired token." });
+            return res.status(401).json({ success: false, message: "Invalid or expired token." });
 
         } else {
             next({ message: "An error occurred while refreshing token.", error });
